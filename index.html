@@ -495,29 +495,24 @@ function ChangePasswordModal({onSave,onClose}){
   const storedPw=localStorage.getItem("asset_password")||DEFAULT_PASSWORD;
   const submit = () => {
     const stored = localStorage.getItem("asset_password") || DEFAULT_PASSWORD;
-    
-    // 💡 精準對齊變數：使用你剛剛更名的 MY_GAS_URL，並帶上密碼參數
     const checkUrl = MY_GAS_URL + "?pwd=" + encodeURIComponent(pw); 
     
     fetch(checkUrl)
       .then(res => res.json())
       .then(res => {
         if (res.success) {
-          localStorage.setItem("asset_password", pw); // 登入成功，在本機記住密碼
+          localStorage.setItem("asset_password", pw);
           
-          // 🛠️ 終極防呆防空殼：
-          // 這裡我們會自動去尋找網頁裡原本用來更新畫面的任何可能函數。
-          // 無論它叫 setData 還是其他名字，這段程式碼都會自動幫你把 Google 回傳的資產數字裝上去！
+          // 🚀 核心大改進：完美對接原廠 asset_data 快取記憶體！
           if (res.data) {
+            localStorage.setItem("asset_data", JSON.stringify(res.data));
+            
+            // 防呆觸發 React 的重新渲染狀態
             if (typeof setData === 'function') { setData(res.data); }
-            else if (typeof setRows === 'function') { setRows(res.data); }
-            else if (typeof setAssetData === 'function') { setAssetData(res.data); }
-            else if (typeof setInitialData === 'function') { setInitialData(res.data); }
           }
           
-          onUnlock(); // 解鎖並滑入主畫面
+          onUnlock(); 
         } else {
-          // 密碼錯誤，執行原本的震動與錯誤提示
           setError(true);
           setShake(true);
           setPw("");
@@ -528,6 +523,7 @@ function ChangePasswordModal({onSave,onClose}){
         alert("連線失敗，請檢查網路或 GAS 部署設定。錯誤原因: " + err.message);
       });
   };
+
 
 
   return(<ModalShell title="🔑 修改密碼" onClose={onClose}>
