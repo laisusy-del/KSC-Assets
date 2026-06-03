@@ -555,10 +555,11 @@ function ChangePasswordModal({onSave,onClose}){
     if (!next) { setError("請輸入新密碼"); return; }
     if (next !== confirm) { setError("兩次新密碼不一致"); return; }
     setLoading(true);
-    // 直接送 POST，GAS 會用 payload.pwd 驗證舊密碼
+    const postBody = { pwd: current.trim(), action: "changePassword", newPwd: next.trim() };
+    console.log("🔑 送出修改密碼 payload:", JSON.stringify(postBody));
     fetch(MY_GAS_URL, {
       method: "POST",
-      body: JSON.stringify({ pwd: current, action: "changePassword", newPwd: next })
+      body: JSON.stringify(postBody)
     })
     .then(r => r.json())
     .then(r => {
