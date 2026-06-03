@@ -115,7 +115,7 @@ function dataToCSV(data) {
   return rows.join("\n");
 }
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG9PnJX3z_k6da3vmLaX_VAoaCcdOPn-yZL3kZ0bwv-ktdzZftVNdDeNRuiqkJrx_9Zg/exec";
+const URL = "https://script.google.com/macros/s/AKfycbzG9PnJX3z_k6da3vmLaX_VAoaCcdOPn-yZL3kZ0bwv-ktdzZftVNdDeNRuiqkJrx_9Zg/exec";
 
 async function syncToGoogleDrive(data) {
   try {
@@ -130,7 +130,7 @@ async function syncToGoogleDrive(data) {
     (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,"",r.note||"",r.id]));
     
     // ⬇️ 這裡已經幫你把所有的括號 ({}) 符號和逗號完全對齊了！
-    const res = await fetch(APPS_SCRIPT_URL, {
+    const res = await fetch(URL, {
       method: "POST",
       body: JSON.stringify({
         pwd: localStorage.getItem("asset_password"),
@@ -148,7 +148,7 @@ async function syncToGoogleDrive(data) {
 
 async function loadFromGoogleDrive() {
   try {
-    const res = await fetch(APPS_SCRIPT_URL);
+    const res = await fetch(URL);
     const result = await res.json();
     if (!result.success || !result.data || result.data.length < 2) return null;
     const rows = result.data.slice(1);
@@ -493,12 +493,34 @@ function TravelModal({initial,onSave,onClose}){
 function ChangePasswordModal({onSave,onClose}){
   const [current,setCurrent]=useState(""),  [next,setNext]=useState(""),  [confirm,setConfirm]=useState(""),  [error,setError]=useState("");
   const storedPw=localStorage.getItem("asset_password")||DEFAULT_PASSWORD;
-  const submit=()=>{
-    if(current!==storedPw){setError("目前密碼錯誤");return;}
-    if(next.length<4){setError("新密碼至少 4 位數");return;}
-    if(next!==confirm){setError("兩次輸入不一致");return;}
-    localStorage.setItem("asset_password",next);onSave();
+  const submit = () => {
+    if (next.length < 4) { setError("新密碼至少 4 位數"); return; }
+    if (next !== confirm) { setError("兩次輸入不一致"); return; }
+    
+    // 💡 這裡請確保你的 GAS 網址變數是 URL 還是其他名字（例如 URL），請跟著修改下面這一行
+    fetch(URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "changePassword",
+        pwd: current, 
+        newPwd: next  
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.success) {
+        localStorage.setItem("asset_password", next);
+        alert("雲端密碼修改成功！所有裝置已同步變更。");
+        onSave();
+      } else {
+        setError("雲端修改失敗：" + res.error);
+      }
+    })
+    .catch(err => {
+      setError("連線失敗，請稍後再試");
+    });
   };
+
   return(<ModalShell title="🔑 修改密碼" onClose={onClose}>
     <div style={{marginBottom:14}}><label style={labelStyle}>目前密碼</label><input type="password" value={current} onChange={e=>{setCurrent(e.target.value);setError("");}} style={{...inputStyle,letterSpacing:6,textAlign:"center"}} placeholder="輸入目前密碼"/></div>
     <div style={{marginBottom:14}}><label style={labelStyle}>新密碼</label><input type="password" value={next} onChange={e=>{setNext(e.target.value);setError("");}} style={{...inputStyle,letterSpacing:6,textAlign:"center"}} placeholder="輸入新密碼"/></div>
