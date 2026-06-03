@@ -107,7 +107,7 @@ function dataToCSV(data) {
   const rows=["類別,持有人,名稱,金額,補充1,補充2,補充3,備註,ID"];
   data.stocks.forEach(r=>rows.push(["股票",r.owner,`${r.name||""}(${r.ticker||""})`,r.amount||0,`類型:${r.type||"股票"}`,`成本:${r.cost||""}`,``,r.note||"",r.id].join(",")));
   data.bank.forEach(r=>rows.push(["銀行存款",r.owner,r.bank||"",r.amount||0,`末五碼:${r.account||""}`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id].join(",")));
-  data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id].join(",")));
+  data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}|起始日:${r.startDate||""}|到期日:${r.endDate||""}`,r.note||"",r.id].join(",")));
   (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id].join(",")));
   data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"NTD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymentDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id].join(",")));
   (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,``,r.note||"",r.id].join(",")));
@@ -123,7 +123,7 @@ async function syncToGoogleDrive(data) {
     rows.push(["類別","持有人","名稱","金額","補充1","補充2","補充3","備註","ID"]);
     data.stocks.forEach(r=>rows.push(["股票",r.owner,r.name||"",r.amount||0,`類型:${r.type||"股票"}`,`成本:${r.cost||""}`,``,r.note||"",r.id]));
     data.bank.forEach(r=>rows.push(["銀行存款",r.owner,r.bank||"",r.amount||0,`末五碼:${r.account||""}`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
-    data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
+    data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}|起始日:${r.startDate||""}|到期日:${r.endDate||""}`,r.note||"",r.id]));
     (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id]));
     data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"NTD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymentDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id]));
     (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,"",r.note||"",r.id]));
@@ -176,13 +176,17 @@ function parseRowsToData(rows) {
         amount: Number(amount)||0, type: val(sup1,"類型")||"股票",
         cost: val(sup1,"成本"), note });
     } else if (type === "銀行存款") {
+      const bankRate = val(sup3,"匯率") || val(sup2,"匯率");
+      if(val(sup2,"幣別")!=="NTD"&&val(sup2,"幣別")) console.log("🏦 銀行外幣解析 sup2="+sup2+" sup3="+sup3+" rate="+bankRate);
       result.bank.push({ id, owner, bank: name, account: val(sup1,"末五碼"),
         amount: Number(amount)||0, currency: val(sup2,"幣別")||"NTD",
-        exchangeRate: val(sup2,"匯率"), note });
+        exchangeRate: bankRate, note });
     } else if (type === "定存") {
+      const fixedRate = val(sup3,"匯率") || val(sup2,"匯率");
+      if(val(sup2,"幣別")!=="NTD"&&val(sup2,"幣別")) console.log("🔒 定存外幣解析 sup2="+sup2+" sup3="+sup3+" rate="+fixedRate);
       result.fixed.push({ id, owner, bank: name, amount: Number(amount)||0,
         rate: val(sup1,"利率").replace("%",""), currency: val(sup2,"幣別")||"NTD",
-        exchangeRate: val(sup2,"匯率"), note });
+        exchangeRate: fixedRate, endDate: val(sup3,"到期日"), startDate: val(sup3,"起始日"), note });
     } else if (type === "房貸") {
       result.mortgage.push({ id, owner, houseName: name,
         totalAmount: Number(amount)||0,
@@ -1273,12 +1277,26 @@ function App(){
 
         {/* ── BANK ── */}
         {tab==="bank"&&(<SectionHeader ownerFilter={ownerFilter} title="🏦 銀行存款" onAdd={()=>{setEditItem(null);setModal("bank")}}>
-          <div style={{display:"flex",gap:10,marginBottom:10}}>
+          <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
             <StatPill label="👨 Koji" value={bankNTD(data.bank,"Koji")} color={C.koji} sub={data.bank.some(r=>r.owner==="Koji"&&r.currency!=="NTD")?"含外幣換算":null}/>
             <StatPill label="👩 Susy" value={bankNTD(data.bank,"Susy")} color={C.susy}/>
             <StatPill label="👦 承祐" value={bankNTD(data.bank,"承祐")} color={C.child}/>
             <StatPill label="合計NTD" value={bankNTD(data.bank)} color={C.total}/>
           </div>
+          {(()=>{
+            const filtered=filterArr(data.bank);
+            const byCurrency=filtered.reduce((acc,r)=>{const c=r.currency||"NTD";acc[c]=(acc[c]||0)+(Number(r.amount)||0);return acc;},{});
+            const foreign=Object.entries(byCurrency).filter(([c])=>c!=="NTD");
+            if(!foreign.length)return null;
+            return <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+              {Object.entries(byCurrency).map(([c,total])=>(
+                <div key={c} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"6px 12px",fontSize:12}}>
+                  <span style={{color:C.textMuted}}>{c} 小計　</span>
+                  <span style={{fontWeight:700,color:C.brownDark}}>{c==="NTD"?"$ ":c==="USD"?"$ ":c==="JPY"?"¥ ":c+" "}{Number(total).toLocaleString("zh-TW")}</span>
+                </div>
+              ))}
+            </div>;
+          })()}
           <SortBar tab="bank" sortConfig={sortConfig} onSort={toggleSort} fields={[{key:"bank",label:"銀行名稱"},{key:"amount",label:"金額"},{key:"owner",label:"持有人"}]}/>
           {data.bank.some(r=>r.currency&&r.currency!=="NTD")&&(
             <div style={{background:C.travel+"10",border:`1px solid ${C.travel}30`,borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,color:C.travel}}>
@@ -1290,12 +1308,25 @@ function App(){
 
         {/* ── FIXED ── */}
         {tab==="fixed"&&(<SectionHeader ownerFilter={ownerFilter} title="🔒 定存" onAdd={()=>{setEditItem(null);setModal("fixed")}}>
-          <div style={{display:"flex",gap:10,marginBottom:10}}>
+          <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
             <StatPill label="👨 Koji" value={fixedNTD(data.fixed,"Koji")} color={C.koji}/>
             <StatPill label="👩 Susy" value={fixedNTD(data.fixed,"Susy")} color={C.susy}/>
             <StatPill label="👦 承祐" value={fixedNTD(data.fixed,"承祐")} color={C.child}/>
             <StatPill label="合計NTD" value={fixedNTD(data.fixed)} color={C.total}/>
           </div>
+          {(()=>{
+            const filtered=filterArr(data.fixed);
+            const byCurrency=filtered.reduce((acc,r)=>{const c=r.currency||"NTD";acc[c]=(acc[c]||0)+(Number(r.amount)||0);return acc;},{});
+            if(Object.keys(byCurrency).length<=1)return null;
+            return <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+              {Object.entries(byCurrency).map(([c,total])=>(
+                <div key={c} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"6px 12px",fontSize:12}}>
+                  <span style={{color:C.textMuted}}>{c} 小計　</span>
+                  <span style={{fontWeight:700,color:C.brownDark}}>{c==="NTD"?"$ ":c==="USD"?"$ ":c==="JPY"?"¥ ":c+" "}{Number(total).toLocaleString("zh-TW")}</span>
+                </div>
+              ))}
+            </div>;
+          })()}
           <SortBar tab="fixed" sortConfig={sortConfig} onSort={toggleSort} fields={[{key:"bank",label:"銀行名稱"},{key:"amount",label:"金額"},{key:"rate",label:"利率"},{key:"endDate",label:"到期日"}]}/>
           {data.fixed.some(r=>r.currency&&r.currency!=="NTD")&&(
             <div style={{background:C.travel+"10",border:`1px solid ${C.travel}30`,borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,color:C.travel}}>
