@@ -128,17 +128,22 @@ async function syncToGoogleDrive(data) {
     data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"NTD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymentDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id]));
     (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,"",r.note||"",r.id]));
     (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,"",r.note||"",r.id]));
+    
+    // ⬇️ 這裡已經幫你把所有的括號 ({}) 符號和逗號完全對齊了！
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
         pwd: localStorage.getItem("asset_password"),
         data: rows
-    }); // 👈 這裡一定要是 }); 結尾，用來結束 fetch(
+      })
+    });
 
     const result = await res.json();
     return result.success !== false;
 
-  } catch { return false; }
+  } catch { 
+    return false; 
+  }
 }
 
 async function loadFromGoogleDrive() {
