@@ -549,36 +549,28 @@ function TravelModal({initial,onSave,onClose}){
 function ChangePasswordModal({onSave,onClose}){
   const [current,setCurrent]=useState(""),  [next,setNext]=useState(""),  [confirm,setConfirm]=useState(""),  [error,setError]=useState("");
   const storedPw=localStorage.getItem("asset_password")||DEFAULT_PASSWORD;
+  const [loading, setLoading] = useState(false);
   const submit = () => {
     if (!current) { setError("請輸入目前密碼"); return; }
     if (!next) { setError("請輸入新密碼"); return; }
     if (next !== confirm) { setError("兩次新密碼不一致"); return; }
-    // 先向 GAS 驗證舊密碼
-    const checkUrl = MY_GAS_URL + "?pwd=" + encodeURIComponent(current);
-    fetch(checkUrl)
-      .then(res => res.json())
-      .then(res => {
-        if (res.success) {
-          // 舊密碼驗證通過，向 GAS 更新密碼
-          fetch(MY_GAS_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "changePassword", oldPwd: current, newPwd: next })
-          })
-          .then(r => r.json())
-          .then(r => {
-            if (r.success) {
-              localStorage.setItem("asset_password", next);
-              onSave();
-            } else {
-              setError("密碼更新失敗：" + (r.error || "未知錯誤"));
-            }
-          })
-          .catch(() => setError("連線失敗，請稍後再試"));
-        } else {
-          setError("目前密碼錯誤");
-        }
-      })
-      .catch(() => setError("連線失敗，請稍後再試"));
+    setLoading(true);
+    // 直接送 POST，GAS 會用 payload.pwd 驗證舊密碼
+    fetch(MY_GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({ pwd: current, action: "changePassword", newPwd: next })
+    })
+    .then(r => r.json())
+    .then(r => {
+      setLoading(false);
+      if (r.success) {
+        localStorage.setItem("asset_password", next);
+        onSave();
+      } else {
+        setError("失敗：" + (r.error || "未知錯誤"));
+      }
+    })
+    .catch(() => { setLoading(false); setError("連線失敗，請稍後再試"); });
   };
 
 
@@ -588,7 +580,7 @@ function ChangePasswordModal({onSave,onClose}){
     <div style={{marginBottom:14}}><label style={labelStyle}>新密碼</label><input type="password" value={next} onChange={e=>{setNext(e.target.value);setError("");}} style={{...inputStyle,letterSpacing:6,textAlign:"center"}} placeholder="輸入新密碼"/></div>
     <div style={{marginBottom:14}}><label style={labelStyle}>確認新密碼</label><input type="password" value={confirm} onChange={e=>{setConfirm(e.target.value);setError("");}} style={{...inputStyle,letterSpacing:6,textAlign:"center"}} placeholder="再輸入一次新密碼"/></div>
     {error&&<p style={{color:C.danger,fontSize:13,textAlign:"center",margin:"0 0 12px"}}>{error}</p>}
-    <BrownBtn onClick={submit}>確認修改</BrownBtn>
+    <BrownBtn onClick={submit}>{loading?"⏳ 更新中…":"確認修改"}</BrownBtn>
     <div style={{height:8}}/><BrownBtn onClick={onClose} variant="ghost">取消</BrownBtn>
   </ModalShell>);
 }
