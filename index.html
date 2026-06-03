@@ -838,8 +838,9 @@ function App(){
   const F=ownerFilter==="all"?null:ownerFilter;
   const filterArr=(arr)=>F?arr.filter(r=>(r.owner||r.payer)===F):arr;
 
-  const allAssets=[...(data?.stocks || []), ...(data?.bank || []), ...(data?.fixed || [])];
-  const filteredAssets=filterArr(allAssets);
+  const allAssets = [...((data && data.stocks) || []), ...((data && data.bank) || []), ...((data && data.fixed) || [])];
+  const filteredAssets = data ? filterArr(allAssets) : [];
+
 
   // NTD conversion helpers for bank/fixed
   const bankNTD=(arr,owner)=>(arr||[]).filter(r=>!owner||r.owner===owner).reduce((s,r)=>s+toNTD(r.amount,r.currency,r.exchangeRate),0);
