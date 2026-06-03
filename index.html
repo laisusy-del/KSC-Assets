@@ -149,44 +149,41 @@ async function syncToGoogleDrive(data) {
     }
 
 
-async function loadFromGoogleDrive() {
+async function syncToGoogleDrive(data) {
   try {
-    const res = await fetch(MY_GAS_URL);
-    const result = await res.json();
-    if (!result.success || !result.data || result.data.length < 2) return null;
-    const rows = result.data.slice(1);
-    const out = { stocks:[], bank:[], fixed:[], mortgage:[], insurance:[], expense:[], travel:[] };
-    const seenIds = new Set();
-    rows.forEach((cols,rowIdx) => {
-      if (!cols[0]) return;
-      const [category, owner, name, amount, s1, s2, s3, note, id] = cols;
-      const stableId = (id && String(id).trim()) ? String(id).trim() : `row_${rowIdx}_${category}`;
-      if (seenIds.has(stableId)) return;
-      seenIds.add(stableId);
-      const base = { owner: String(owner||""), amount: Number(amount)||0, note: String(note||""), id: stableId };
-      if (category==="股票") {
-        out.stocks.push({ ...base, name: String(name||""), type: String(s1||"").replace("類型:","") || "股票", cost: String(s2||"").replace("成本:","") });
-      } else if (category==="銀行存款") {
-        out.bank.push({ ...base, bank: String(name||""), account: String(s1||"").replace("末五碼:",""), currency: String(s2||"").replace("幣別:","") || "NTD", exchangeRate: String(s3||"").replace("匯率:","") });
-      } else if (category==="定存") {
-        out.fixed.push({ ...base, bank: String(name||""), rate: String(s1||"").replace("利率:","").replace("%",""), currency: String(s2||"").replace("幣別:","") || "NTD", exchangeRate: String(s3||"").replace("匯率:","") });
-      } else if (category==="房貸") {
-        const parseKV = (str) => { const obj={}; String(str||"").split("|").forEach(p=>{ const [k,...v]=p.split(":"); if(k) obj[k.trim()]=v.join(":").trim(); }); return obj; };
-        const s1obj = parseKV(s1); const s2obj = parseKV(s2); const s3obj = parseKV(s3);
-        out.mortgage.push({ id: stableId, owner: String(owner||""), houseName: String(name||""), bank: s1obj["銀行"]||String(name||""), totalAmount: Number(amount)||0, monthlyPayment: s1obj["每月"]||"", totalMonths: s1obj["總期"]||"", paidMonths: s1obj["已繳"]||"", rate: s2obj["利率"]||"", startDate: s2obj["起貸"]||"", remainingPrincipal: s3obj["剩餘本金"]||"", estimatedInterest: s3obj["預估利息"]||"", paidMonthsUpdatedAt: s3obj["已繳更新"]||"", note: String(note||"") });
-      } else if (category==="保單") {
-        const parseKV = (str) => { const obj={}; String(str||"").split("|").forEach(p=>{ const [k,...v]=p.split(":"); if(k) obj[k.trim()]=v.join(":").trim(); }); return obj; };
-        const s1obj=parseKV(s1); const s2obj=parseKV(s2); const s3obj=parseKV(s3);
-        out.insurance.push({ ...base, product: String(name||""), periodAmount: Number(amount)||0, premium: Number(amount)||0, amount: s1obj["保額"]||"", company: s1obj["公司"]||"", insured: s1obj["被保人"]||"", type: s2obj["類型"]||"壽險", currency: s2obj["幣別"]||"NTD", exchangeRateIns: s2obj["匯率"]||"", totalPeriods: s3obj["總期"]||"", paidPeriods: s3obj["已繳"]||"", paymentMonths: s3obj["扣款月"]||"", lastPaymentDate: s3obj["最後繳"]||"", status: s3obj["狀態"]||"未繳完" });
-      } else if (category==="固定開銷") {
-        out.expense.push({ ...base, payer: String(owner||"共同"), name: String(name||""), category: String(s1||"").replace("類別:",""), freq: String(s2||"").replace("頻率:","") || "每月" });
-      } else if (category==="出國紀錄") {
-        out.travel.push({ id: stableId, destination: String(name||""), totalAmount: Number(amount)||0, dateRange: String(s1||"").replace("日期:",""), travelers: String(s2||"").replace("人數:",""), note: String(note||""), items:[] });
-      }
+    const rows = [];
+    rows.push(["類別","持有人","名稱","金額","補充1","補充2","補充3","備註","ID"]);
+    data.stocks.forEach(r=>rows.push(["股票",r.owner,r.name||"",r.amount||0,`類型:${r.type||"股票"}`,`成本:${r.cost||""}`,``,r.note||"",r.id]));
+    data.bank.forEach(r=>rows.push(["銀行存款",r.owner,r.bank||"",r.amount||0,`末五碼:${r.account||""}`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
+    data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
+    (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id]));
+    data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"NTD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymentDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id]));
+    (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,"",r.note||"",r.id]));
+    (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,"",r.note||"",r.id]));
+    
+    const res = await fetch(MY_GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        pwd: localStorage.getItem("asset_password"),
+        data: rows
+      })
     });
-    return out;
-  } catch { return null; }
-}
+
+    const result = await res.json();
+    
+    if (result && result.success === true) {
+      return true;
+    } else {
+      console.error("Google 拒絕寫入，原因:", result ? result.error : "未知錯誤");
+      return false;
+    }
+
+  } catch (err) { 
+    console.error("連線拋出異常:", err);
+    return false; 
+  }
+} // 👈 這裡最後只會精準保留一個關閉整個函數的大括號
+
 
 // ── Shared UI ─────────────────────────────────────────────────
 const cardStyle={background:C.card,borderRadius:16,border:`1px solid ${C.border}`,padding:"20px",marginBottom:12,boxShadow:"0 2px 8px rgba(90,60,30,0.06)"};
