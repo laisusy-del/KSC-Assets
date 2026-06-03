@@ -25,7 +25,7 @@
 const { useState, useEffect, useCallback, useRef } = React;
 
 const DEFAULT_PASSWORD = "";
-const OWNERS = ["Koji", "Susy", "承祐"];
+const OWNERS = ["KK", "SS", "BB"];
 const EXPENSE_CATEGORIES = ["水費","電費","瓦斯費","電話費","網路費","保險費","學費","房租/房貸","管理費","訂閱費","房屋稅","地價稅","其他"];
 const INSURANCE_TYPES_SAVINGS = ["儲蓄險"]; // 算入資產
 const INSURANCE_TYPES_OTHER = ["壽險","醫療險","意外險","投資型","其他"]; // 不算入資產
@@ -47,7 +47,7 @@ const TABS = [
 const C = {
   bg:"#F5F0E8",card:"#FFFDF7",border:"#E8DFD0",
   brown:"#7B5C3E",brownDark:"#5C3D1E",brownLight:"#A07850",accent:"#C4956A",
-  koji:"#6B8CAE",susy:"#C47A8A",child:"#E8A87C",total:"#7A9E7E",
+  KK:"#6B8CAE",SS:"#C47A8A",child:"#E8A87C",total:"#7A9E7E",
   text:"#3D2B1F",textLight:"#8B7355",textMuted:"#B8A898",
   white:"#FFFDF7",success:"#7A9E7E",danger:"#C47A5A",
   expense:"#9B7DB5",travel:"#5B8FA8",mortgage:"#7B8CAE",
@@ -183,10 +183,12 @@ function parseRowsToData(rows) {
         exchangeRate: bankRate, note });
     } else if (type === "定存") {
       const fixedRate = val(sup3,"匯率") || val(sup2,"匯率");
-      if(val(sup2,"幣別")!=="NTD"&&val(sup2,"幣別")) console.log("🔒 定存外幣解析 sup2="+sup2+" sup3="+sup3+" rate="+fixedRate);
+      const fixedEnd = val(sup3,"到期日");
+      const fixedStart = val(sup3,"起始日");
+      console.log(`🔒 定存[${name}] sup3原始值="${sup3}" → 匯率="${fixedRate}" 起始日="${fixedStart}" 到期日="${fixedEnd}"`);
       result.fixed.push({ id, owner, bank: name, amount: Number(amount)||0,
         rate: val(sup1,"利率").replace("%",""), currency: val(sup2,"幣別")||"NTD",
-        exchangeRate: fixedRate, endDate: val(sup3,"到期日"), startDate: val(sup3,"起始日"), note });
+        exchangeRate: fixedRate, endDate: fixedEnd, startDate: fixedStart, note });
     } else if (type === "房貸") {
       result.mortgage.push({ id, owner, houseName: name,
         totalAmount: Number(amount)||0,
@@ -251,7 +253,7 @@ const inputStyle={background:C.bg,border:`1.5px solid ${C.border}`,borderRadius:
 const labelStyle={color:C.textLight,fontSize:13,fontWeight:600,display:"block",marginBottom:6};
 
 function Tag({children,color}){return <span style={{background:color+"22",color,borderRadius:20,padding:"3px 12px",fontSize:12,fontWeight:700}}>{children}</span>;}
-function OwnerTag({owner}){return <Tag color={owner==="Koji"?C.koji:owner==="Susy"?C.susy:owner==="承祐"?C.child:C.accent}>{owner}</Tag>;}
+function OwnerTag({owner}){return <Tag color={owner==="KK"?C.KK:owner==="SS"?C.SS:owner==="BB"?C.child:C.accent}>{owner}</Tag>;}
 function Field({label,value,onChange,type="text",placeholder}){
   const isNum = type==="number";
   return(<div style={{marginBottom:14,flex:1}}>{label&&<label style={labelStyle}>{label}</label>}<input type="text" inputMode={isNum?"decimal":"text"} value={value||""} onChange={e=>{if(isNum){const raw=e.target.value.replace(/[^0-9.\-]/g,"");onChange(raw);}else{onChange(e.target.value);}}} onFocus={e=>isNum&&e.target.select()} placeholder={placeholder} style={inputStyle}/></div>);
@@ -261,7 +263,7 @@ function SelectField({label,value,onChange,options}){
 }
 function OwnerSelect({value,onChange,label="持有人",includeShared=false}){
   const opts=includeShared?["共同",...OWNERS]:OWNERS;
-  return(<div style={{marginBottom:14}}><label style={labelStyle}>{label}</label><div style={{display:"flex",gap:8}}>{opts.map(o=>(<button key={o} onClick={()=>onChange(o)} style={{flex:1,padding:"11px",borderRadius:12,border:`2px solid ${value===o?(o==="Koji"?C.koji:o==="Susy"?C.susy:o==="承祐"?C.child:C.accent):C.border}`,background:value===o?(o==="Koji"?C.koji+"18":o==="Susy"?C.susy+"18":o==="承祐"?C.child+"18":C.accent+"18"):C.bg,color:value===o?(o==="Koji"?C.koji:o==="Susy"?C.susy:o==="承祐"?C.child:C.accent):C.textLight,fontWeight:700,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>{o==="Koji"?"👨 Koji":o==="Susy"?"👩 Susy":o==="承祐"?"👦 承祐":"👨‍👩 共同"}</button>))}</div></div>);
+  return(<div style={{marginBottom:14}}><label style={labelStyle}>{label}</label><div style={{display:"flex",gap:8}}>{opts.map(o=>(<button key={o} onClick={()=>onChange(o)} style={{flex:1,padding:"11px",borderRadius:12,border:`2px solid ${value===o?(o==="KK"?C.KK:o==="SS"?C.SS:o==="BB"?C.child:C.accent):C.border}`,background:value===o?(o==="KK"?C.KK+"18":o==="SS"?C.SS+"18":o==="BB"?C.child+"18":C.accent+"18"):C.bg,color:value===o?(o==="KK"?C.KK:o==="SS"?C.SS:o==="BB"?C.child:C.accent):C.textLight,fontWeight:700,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>{o==="KK"?"👨 KK":o==="SS"?"👩 SS":o==="BB"?"👦 BB":"👨‍👩 共同"}</button>))}</div></div>);
 }
 function BrownBtn({onClick,children,variant="primary",small=false,color}){
   return(<button onClick={onClick} style={{padding:small?"8px 16px":"13px 24px",borderRadius:12,border:variant!=="primary"?`1.5px solid ${C.border}`:"none",background:variant==="primary"?(color||C.brown):"transparent",color:variant==="primary"?C.white:(color||C.brown),fontWeight:700,cursor:"pointer",fontSize:small?13:15,fontFamily:"inherit",width:variant==="primary"&&!small?"100%":"auto"}}>{children}</button>);
@@ -302,7 +304,7 @@ function CurrencyExchangeFields({currency,exchangeRate,amount,onCurrencyChange,o
 
 // ── Asset Modals ──────────────────────────────────────────────
 function StockModal({initial,defaultOwner,onSave,onClose}){
-  const [f,setF]=useState(initial||{owner:defaultOwner||"Koji",type:"股票",name:"",amount:"",cost:"",note:""});
+  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",type:"股票",name:"",amount:"",cost:"",note:""});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const isStock=f.type==="股票";
   const profit=(Number(f.amount)||0)-(Number(f.cost)||0);
@@ -341,7 +343,7 @@ function StockModal({initial,defaultOwner,onSave,onClose}){
 }
 
 function BankModal({initial,defaultOwner,onSave,onClose}){
-  const [f,setF]=useState(initial||{owner:defaultOwner||"Koji",bank:"",account:"",amount:"",currency:"NTD",exchangeRate:"",note:""});
+  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",bank:"",account:"",amount:"",currency:"NTD",exchangeRate:"",note:""});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const isForeign=f.currency&&f.currency!=="NTD";
   return(<ModalShell title={initial?.id?"✏️ 編輯存款":"🏦 新增存款"} onClose={onClose}>
@@ -359,7 +361,7 @@ function BankModal({initial,defaultOwner,onSave,onClose}){
 }
 
 function FixedModal({initial,defaultOwner,onSave,onClose}){
-  const [f,setF]=useState(initial||{owner:defaultOwner||"Koji",bank:"",amount:"",rate:"",currency:"NTD",exchangeRate:"",startDate:"",endDate:"",note:""});
+  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",bank:"",amount:"",rate:"",currency:"NTD",exchangeRate:"",startDate:"",endDate:"",note:""});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const isForeign=f.currency&&f.currency!=="NTD";
   return(<ModalShell title={initial?.id?"✏️ 編輯定存":"🔒 新增定存"} onClose={onClose}>
@@ -381,7 +383,7 @@ function FixedModal({initial,defaultOwner,onSave,onClose}){
 }
 
 function MortgageModal({initial,defaultOwner,onSave,onClose}){
-  const [f,setF]=useState(initial||{owner:defaultOwner||"Koji",houseName:"",bank:"",totalAmount:"",totalMonths:"",paidMonths:"",paidMonthsUpdatedAt:"",monthlyPayment:"",rate:"",startDate:"",remainingPrincipal:"",remainingTotalPayment:"",estimatedInterest:"",note:""});
+  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",houseName:"",bank:"",totalAmount:"",totalMonths:"",paidMonths:"",paidMonthsUpdatedAt:"",monthlyPayment:"",rate:"",startDate:"",remainingPrincipal:"",remainingTotalPayment:"",estimatedInterest:"",note:""});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const remaining=Math.max(0,(Number(f.totalMonths)||0)-(Number(f.paidMonths)||0));
   const remainingAmt=remaining*(Number(f.monthlyPayment)||0);
@@ -444,7 +446,7 @@ function MortgageModal({initial,defaultOwner,onSave,onClose}){
 }
 
 function InsuranceModal({initial,defaultOwner,onSave,onClose}){
-  const [f,setF]=useState(initial||{owner:defaultOwner||"Koji",insured:"",company:"",product:"",type:"壽險",currency:"NTD",exchangeRateIns:"",amount:"",premium:"",periodAmount:"",totalPeriods:"",paidPeriods:"",lastPaymentDate:"",paymentMonths:"",status:"未繳完",note:""});
+  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",insured:"",company:"",product:"",type:"壽險",currency:"NTD",exchangeRateIns:"",amount:"",premium:"",periodAmount:"",totalPeriods:"",paidPeriods:"",lastPaymentDate:"",paymentMonths:"",status:"未繳完",note:""});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const isSavings=f.type==="儲蓄險";
   const remainingPeriods=Math.max(0,(Number(f.totalPeriods)||0)-(Number(f.paidPeriods)||0));
@@ -778,8 +780,8 @@ function SortBar({tab,sortConfig,onSort,fields}){
 }
 
 function SectionHeader({title,onAdd,btnColor,children,ownerFilter}){
-  const oc={Koji:C.koji,Susy:C.susy,"承祐":C.child};
-  const oi={Koji:"👨",Susy:"👩","承祐":"👦"};
+  const oc={KK:C.KK,SS:C.SS,"BB":C.child};
+  const oi={KK:"👨",SS:"👩","BB":"👦"};
   return(<>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:ownerFilter&&ownerFilter!=="all"?6:14}}>
       <h2 style={{color:C.brownDark,fontSize:17,fontWeight:800,margin:0}}>{title}</h2>
@@ -800,9 +802,9 @@ function SectionHeader({title,onAdd,btnColor,children,ownerFilter}){
 function OwnerFilterBar({filter,onChange}){
   const opts=[
     {k:"all",label:"全家",icon:"👨\u200d👩\u200d👦",color:C.brown},
-    {k:"Koji",label:"Koji",icon:"👨",color:C.koji},
-    {k:"Susy",label:"Susy",icon:"👩",color:C.susy},
-    {k:"承祐",label:"承祐",icon:"👦",color:C.child}
+    {k:"KK",label:"KK",icon:"👨",color:C.KK},
+    {k:"SS",label:"SS",icon:"👩",color:C.SS},
+    {k:"BB",label:"BB",icon:"👦",color:C.child}
   ];
   return(
     <div style={{background:C.card,borderBottom:`1px solid ${C.border}`,padding:"10px 14px"}}>
@@ -864,7 +866,7 @@ function App(){
     },1500);
   },[]);
 
-  const loadFromDrive=async()=>{
+  const loadFromDrive=useCallback(async()=>{
     setSyncStatus("loading");
     const loaded=await loadFromGoogleDrive();
     if(loaded && typeof loaded==="object" && !Array.isArray(loaded)){
@@ -872,8 +874,12 @@ function App(){
       const merged={};
       keys.forEach(k=>{
         const remote=loaded[k];
-        const local=(data[k]||[]);
-        merged[k]=(Array.isArray(remote))?remote:local;
+        // 遠端有資料才用遠端，否則保留 localStorage 的資料
+        if(Array.isArray(remote) && remote.length > 0){
+          merged[k]=remote;
+        } else {
+          try{ merged[k]=JSON.parse(localStorage.getItem("asset_data"))?.[k]||[]; }catch{ merged[k]=[]; }
+        }
       });
       const clean=dedupeData({...DEFAULT_DATA,...merged});
       setData(clean);
@@ -887,7 +893,14 @@ function App(){
       setSyncStatus("error");
     }
     setTimeout(()=>setSyncStatus("idle"),3000);
-  };
+  },[]);
+
+  // 登入後背景靜默同步 GAS（不清空畫面，localStorage 資料先顯示）
+  useEffect(()=>{
+    if(unlocked && MY_GAS_URL && MY_GAS_URL !== "YOUR_GAS_URL_HERE"){
+      loadFromDrive();
+    }
+  },[unlocked, loadFromDrive]);
 
   const handleUnlock=()=>{sessionStorage.setItem("asset_unlocked","1");setUnlocked(true);};
   const handleLock=()=>{sessionStorage.removeItem("asset_unlocked");setUnlocked(false);};
@@ -932,15 +945,15 @@ function App(){
     const t=r.currency?toNTD(r.amount,r.currency,r.exchangeRate):Number(r.amount)||0;
     return s+t;
   },0)+savingsInsuranceAsset(filterArr(data.insurance));
-  const kojiTotal=[...filterArr(data.stocks)].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(filterArr(data.bank),"Koji")+fixedNTD(filterArr(data.fixed),"Koji")+savingsInsuranceAsset(data.insurance,"Koji");
-  const susyTotal=[...filterArr(data.stocks).filter(r=>r.owner==="Susy")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"Susy")+fixedNTD(data.fixed,"Susy")+savingsInsuranceAsset(data.insurance,"Susy");
-  const childTotal=[...data.stocks.filter(r=>r.owner==="承祐")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"承祐")+fixedNTD(data.fixed,"承祐")+savingsInsuranceAsset(data.insurance,"承祐");
+  const KKTotal=[...filterArr(data.stocks)].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(filterArr(data.bank),"KK")+fixedNTD(filterArr(data.fixed),"KK")+savingsInsuranceAsset(data.insurance,"KK");
+  const SSTotal=[...filterArr(data.stocks).filter(r=>r.owner==="SS")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"SS")+fixedNTD(data.fixed,"SS")+savingsInsuranceAsset(data.insurance,"SS");
+  const childTotal=[...data.stocks.filter(r=>r.owner==="BB")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"BB")+fixedNTD(data.fixed,"BB")+savingsInsuranceAsset(data.insurance,"BB");
 
   // per-person totals used in dashboard
   const personTotal={
-    Koji:[...data.stocks.filter(r=>r.owner==="Koji")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"Koji")+fixedNTD(data.fixed,"Koji")+savingsInsuranceAsset(data.insurance,"Koji"),
-    Susy:[...data.stocks.filter(r=>r.owner==="Susy")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"Susy")+fixedNTD(data.fixed,"Susy")+savingsInsuranceAsset(data.insurance,"Susy"),
-    "承祐":[...data.stocks.filter(r=>r.owner==="承祐")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"承祐")+fixedNTD(data.fixed,"承祐")+savingsInsuranceAsset(data.insurance,"承祐"),
+    KK:[...data.stocks.filter(r=>r.owner==="KK")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"KK")+fixedNTD(data.fixed,"KK")+savingsInsuranceAsset(data.insurance,"KK"),
+    SS:[...data.stocks.filter(r=>r.owner==="SS")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"SS")+fixedNTD(data.fixed,"SS")+savingsInsuranceAsset(data.insurance,"SS"),
+    "BB":[...data.stocks.filter(r=>r.owner==="BB")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankNTD(data.bank,"BB")+fixedNTD(data.fixed,"BB")+savingsInsuranceAsset(data.insurance,"BB"),
   };
   const grandTotal=Object.values(personTotal).reduce((s,v)=>s+v,0);
 
@@ -1151,9 +1164,9 @@ function App(){
         {tab==="dashboard"&&(<>
           {/* Filter indicator */}
           {ownerFilter!=="all"&&(
-            <div style={{background:ownerFilter==="Koji"?C.koji+"18":ownerFilter==="Susy"?C.susy+"18":C.child+"18",border:`1px solid ${ownerFilter==="Koji"?C.koji:ownerFilter==="Susy"?C.susy:C.child}44`,borderRadius:12,padding:"8px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{color:ownerFilter==="Koji"?C.koji:ownerFilter==="Susy"?C.susy:C.child,fontWeight:700,fontSize:13}}>
-                {ownerFilter==="Koji"?"👨":"👩‍🦰"} 顯示：{ownerFilter} 的資產
+            <div style={{background:ownerFilter==="KK"?C.KK+"18":ownerFilter==="SS"?C.SS+"18":C.child+"18",border:`1px solid ${ownerFilter==="KK"?C.KK:ownerFilter==="SS"?C.SS:C.child}44`,borderRadius:12,padding:"8px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{color:ownerFilter==="KK"?C.KK:ownerFilter==="SS"?C.SS:C.child,fontWeight:700,fontSize:13}}>
+                {ownerFilter==="KK"?"👨":"👩‍🦰"} 顯示：{ownerFilter} 的資產
               </span>
               <button onClick={()=>setOwnerFilter("all")} style={{background:"none",border:"none",color:C.textMuted,cursor:"pointer",fontSize:12}}>顯示全部 ✕</button>
             </div>
@@ -1163,9 +1176,9 @@ function App(){
             <div style={{fontSize:12,opacity:0.75,marginBottom:4}}>{ownerFilter==="all"?"家庭總資產":ownerFilter+" 的資產"}</div>
             <div style={{fontSize:30,fontWeight:900,marginBottom:14}}>{formatNTD(ownerFilter==="all"?grandTotal:personTotal[ownerFilter]||0)}</div>
             {ownerFilter==="all"&&<div style={{display:"flex",gap:8}}>
-              {[{name:"Koji",color:C.koji},{name:"Susy",color:C.susy},{name:"承祐",color:C.child}].map(({name,color})=>(
+              {[{name:"KK",color:C.KK},{name:"SS",color:C.SS},{name:"BB",color:C.child}].map(({name,color})=>(
                 <div key={name} style={{flex:1,background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"10px"}}>
-                  <div style={{fontSize:11,opacity:0.8,marginBottom:2}}>{name==="Koji"?"👨":name==="Susy"?"👩":"👦"} {name}</div>
+                  <div style={{fontSize:11,opacity:0.8,marginBottom:2}}>{name==="KK"?"👨":name==="SS"?"👩":"👦"} {name}</div>
                   <div style={{fontSize:13,fontWeight:800}}>{formatNTD(personTotal[name])}</div>
                   <div style={{fontSize:11,opacity:0.65}}>{grandTotal?Math.round(personTotal[name]/grandTotal*100):0}%</div>
                 </div>
@@ -1183,9 +1196,9 @@ function App(){
               <div>
                 <div style={{fontWeight:700,fontSize:14,color:C.brownDark,marginBottom:4}}>{label}</div>
                 {ownerFilter==="all"&&<div style={{display:"flex",gap:10}}>
-                  <span style={{color:C.koji,fontSize:12}}>Koji {formatNTD(key==="bank"?bankNTD(data.bank,"Koji"):key==="fixed"?fixedNTD(data.fixed,"Koji"):sumBy(data[key],"Koji"))}</span>
-                  <span style={{color:C.susy,fontSize:12}}>Susy {formatNTD(key==="bank"?bankNTD(data.bank,"Susy"):key==="fixed"?fixedNTD(data.fixed,"Susy"):sumBy(data[key],"Susy"))}</span>
-                  <span style={{color:C.child,fontSize:12}}>承祐 {formatNTD(key==="bank"?bankNTD(data.bank,"承祐"):key==="fixed"?fixedNTD(data.fixed,"承祐"):sumBy(data[key],"承祐"))}</span>
+                  <span style={{color:C.KK,fontSize:12}}>KK {formatNTD(key==="bank"?bankNTD(data.bank,"KK"):key==="fixed"?fixedNTD(data.fixed,"KK"):sumBy(data[key],"KK"))}</span>
+                  <span style={{color:C.SS,fontSize:12}}>SS {formatNTD(key==="bank"?bankNTD(data.bank,"SS"):key==="fixed"?fixedNTD(data.fixed,"SS"):sumBy(data[key],"SS"))}</span>
+                  <span style={{color:C.child,fontSize:12}}>BB {formatNTD(key==="bank"?bankNTD(data.bank,"BB"):key==="fixed"?fixedNTD(data.fixed,"BB"):sumBy(data[key],"BB"))}</span>
                 </div>}
               </div>
               <div style={{textAlign:"right"}}>
@@ -1270,7 +1283,7 @@ function App(){
 
         {/* ── STOCKS ── */}
         {tab==="stocks"&&(<SectionHeader ownerFilter={ownerFilter} title="📈 股票 ＆ 基金" onAdd={()=>{setEditItem(null);setModal("stocks")}}>
-          <div style={{display:"flex",gap:10,marginBottom:10}}><StatPill label="👨 Koji" value={sumBy(data.stocks,"Koji")} color={C.koji}/><StatPill label="👩 Susy" value={sumBy(data.stocks,"Susy")} color={C.susy}/><StatPill label="👦 承祐" value={sumBy(data.stocks,"承祐")} color={C.child}/><StatPill label="合計" value={sumBy(data.stocks)} color={C.total}/></div>
+          <div style={{display:"flex",gap:10,marginBottom:10}}><StatPill label="👨 KK" value={sumBy(data.stocks,"KK")} color={C.KK}/><StatPill label="👩 SS" value={sumBy(data.stocks,"SS")} color={C.SS}/><StatPill label="👦 BB" value={sumBy(data.stocks,"BB")} color={C.child}/><StatPill label="合計" value={sumBy(data.stocks)} color={C.total}/></div>
           <SortBar tab="stocks" sortConfig={sortConfig} onSort={toggleSort} fields={[{key:"name",label:"名稱"},{key:"amount",label:"市值"},{key:"profit",label:"獲利"},{key:"owner",label:"持有人"}]}/>
           {(()=>{const sc=sortConfig["stocks"];const sorted=applySortConfig(filterArr(data.stocks),sc,r=>sc&&sc.field==="name"?r.name:sc&&sc.field==="owner"?r.owner:sc&&sc.field==="profit"?(Number(r.amount)||0)-(Number(r.cost)||0):Number(r.amount)||0);return !sorted.length?<div style={{textAlign:"center",color:C.textMuted,padding:"40px 0",fontSize:14}}>尚無投資紀錄</div>:sorted.map(r=><RowCard key={r.id} row={r} fields={stockFields} onEdit={r=>{setEditItem(r);setModal("stocks")}} onDelete={id=>deleteItem("stocks",id)}/>);})()}
         </SectionHeader>)}
@@ -1278,9 +1291,9 @@ function App(){
         {/* ── BANK ── */}
         {tab==="bank"&&(<SectionHeader ownerFilter={ownerFilter} title="🏦 銀行存款" onAdd={()=>{setEditItem(null);setModal("bank")}}>
           <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-            <StatPill label="👨 Koji" value={bankNTD(data.bank,"Koji")} color={C.koji} sub={data.bank.some(r=>r.owner==="Koji"&&r.currency!=="NTD")?"含外幣換算":null}/>
-            <StatPill label="👩 Susy" value={bankNTD(data.bank,"Susy")} color={C.susy}/>
-            <StatPill label="👦 承祐" value={bankNTD(data.bank,"承祐")} color={C.child}/>
+            <StatPill label="👨 KK" value={bankNTD(data.bank,"KK")} color={C.KK} sub={data.bank.some(r=>r.owner==="KK"&&r.currency!=="NTD")?"含外幣換算":null}/>
+            <StatPill label="👩 SS" value={bankNTD(data.bank,"SS")} color={C.SS}/>
+            <StatPill label="👦 BB" value={bankNTD(data.bank,"BB")} color={C.child}/>
             <StatPill label="合計NTD" value={bankNTD(data.bank)} color={C.total}/>
           </div>
           {(()=>{
@@ -1309,9 +1322,9 @@ function App(){
         {/* ── FIXED ── */}
         {tab==="fixed"&&(<SectionHeader ownerFilter={ownerFilter} title="🔒 定存" onAdd={()=>{setEditItem(null);setModal("fixed")}}>
           <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-            <StatPill label="👨 Koji" value={fixedNTD(data.fixed,"Koji")} color={C.koji}/>
-            <StatPill label="👩 Susy" value={fixedNTD(data.fixed,"Susy")} color={C.susy}/>
-            <StatPill label="👦 承祐" value={fixedNTD(data.fixed,"承祐")} color={C.child}/>
+            <StatPill label="👨 KK" value={fixedNTD(data.fixed,"KK")} color={C.KK}/>
+            <StatPill label="👩 SS" value={fixedNTD(data.fixed,"SS")} color={C.SS}/>
+            <StatPill label="👦 BB" value={fixedNTD(data.fixed,"BB")} color={C.child}/>
             <StatPill label="合計NTD" value={fixedNTD(data.fixed)} color={C.total}/>
           </div>
           {(()=>{
@@ -1397,7 +1410,7 @@ function App(){
                 <div style={{fontWeight:800,fontSize:14,color:C.success,marginBottom:10}}>💰 儲蓄險（計入資產）</div>
                 <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
                   <StatPill label="已繳資產 NTD" value={savingsNTD} color={C.success}/>
-                  {savingsUSD>0&&<StatPill label={`已繳 USD`} value={savingsUSD} color={C.koji}/>}
+                  {savingsUSD>0&&<StatPill label={`已繳 USD`} value={savingsUSD} color={C.KK}/>}
                   <div style={{background:C.card,borderRadius:14,padding:"13px 16px",border:`1px solid ${C.border}`}}>
                     <div style={{color:C.textMuted,fontSize:11,fontWeight:600,marginBottom:3}}>張數</div>
                     <div style={{color:C.success,fontSize:15,fontWeight:800}}>{savingsArr.length} 張</div>
@@ -1407,14 +1420,14 @@ function App(){
               </div>
 
               {/* 壽險 section */}
-              <div style={{background:C.koji+"10",border:`1px solid ${C.koji}33`,borderRadius:14,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontWeight:800,fontSize:14,color:C.koji,marginBottom:10}}>🛡️ 壽險（計入資產）</div>
+              <div style={{background:C.KK+"10",border:`1px solid ${C.KK}33`,borderRadius:14,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontWeight:800,fontSize:14,color:C.KK,marginBottom:10}}>🛡️ 壽險（計入資產）</div>
                 <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                  <StatPill label="已繳資產 NTD" value={lifeNTD} color={C.koji}/>
-                  {lifeUSD>0&&<StatPill label={`已繳 USD`} value={lifeUSD} color={C.koji}/>}
+                  <StatPill label="已繳資產 NTD" value={lifeNTD} color={C.KK}/>
+                  {lifeUSD>0&&<StatPill label={`已繳 USD`} value={lifeUSD} color={C.KK}/>}
                   <div style={{background:C.card,borderRadius:14,padding:"13px 16px",border:`1px solid ${C.border}`}}>
                     <div style={{color:C.textMuted,fontSize:11,fontWeight:600,marginBottom:3}}>張數</div>
-                    <div style={{color:C.koji,fontSize:15,fontWeight:800}}>{lifeArr.length} 張</div>
+                    <div style={{color:C.KK,fontSize:15,fontWeight:800}}>{lifeArr.length} 張</div>
                   </div>
                 </div>
                 {!lifeArr.length?<div style={{textAlign:"center",color:C.textMuted,padding:"20px 0",fontSize:14}}>尚無壽險</div>:lifeArr.map(r=><InsRowCard key={r.id} row={r} fields={insFields} onEdit={r=>{setEditItem(r);setModal("insurance")}} onDelete={id=>deleteItem("insurance",id)}/>)}
@@ -1494,11 +1507,11 @@ function App(){
       </div>
 
       {/* Modals */}
-      {modal==="stocks"&&<StockModal initial={editItem} defaultOwner={ownerFilter==="all"?"Koji":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("stocks",item):addItem("stocks",item)}/>}
-      {modal==="bank"&&<BankModal initial={editItem} defaultOwner={ownerFilter==="all"?"Koji":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("bank",item):addItem("bank",item)}/>}
-      {modal==="fixed"&&<FixedModal initial={editItem} defaultOwner={ownerFilter==="all"?"Koji":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("fixed",item):addItem("fixed",item)}/>}
-      {modal==="mortgage"&&<MortgageModal initial={editItem} defaultOwner={ownerFilter==="all"?"Koji":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("mortgage",item):addItem("mortgage",item)}/>}
-      {modal==="insurance"&&<InsuranceModal initial={editItem} defaultOwner={ownerFilter==="all"?"Koji":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("insurance",item):addItem("insurance",item)}/>}
+      {modal==="stocks"&&<StockModal initial={editItem} defaultOwner={ownerFilter==="all"?"KK":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("stocks",item):addItem("stocks",item)}/>}
+      {modal==="bank"&&<BankModal initial={editItem} defaultOwner={ownerFilter==="all"?"KK":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("bank",item):addItem("bank",item)}/>}
+      {modal==="fixed"&&<FixedModal initial={editItem} defaultOwner={ownerFilter==="all"?"KK":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("fixed",item):addItem("fixed",item)}/>}
+      {modal==="mortgage"&&<MortgageModal initial={editItem} defaultOwner={ownerFilter==="all"?"KK":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("mortgage",item):addItem("mortgage",item)}/>}
+      {modal==="insurance"&&<InsuranceModal initial={editItem} defaultOwner={ownerFilter==="all"?"KK":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("insurance",item):addItem("insurance",item)}/>}
       {modal==="expense"&&<ExpenseModal initial={editItem} defaultOwner={ownerFilter==="all"?"共同":ownerFilter} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("expense",item):addItem("expense",item)}/>}
       {modal==="travel"&&<TravelModal initial={editItem} onClose={()=>{setModal(null);setEditItem(null)}} onSave={item=>editItem?updateItem("travel",item):addItem("travel",item)}/>}
       {modal==="changePassword"&&<ChangePasswordModal onClose={()=>{setModal(null);setPwChanged(false)}} onSave={()=>{setModal(null);setPwChanged(true);setTimeout(()=>setPwChanged(false),3000);}}/>}
