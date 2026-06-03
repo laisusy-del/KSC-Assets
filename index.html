@@ -128,39 +128,6 @@ async function syncToGoogleDrive(data) {
     data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"NTD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymentDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id]));
     (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,"",r.note||"",r.id]));
     (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,"",r.note||"",r.id]));
-    
-    // ⬇️ 這裡已經幫你把所有的括號 ({}) 符號和逗號完全對齊了！
-        const res = await fetch(MY_GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        pwd: localStorage.getItem("asset_password"),
-        data: rows
-      })
-    });
-
-    const result = await res.json();
-    
-    // ⭕ 改成最安全的防呆寫法：只要 success 是 true 就判定成功！
-    if (result && result.success === true) {
-      return true;
-    } else {
-      console.error("Google 拒絕寫入，原因:", result.error);
-      return false;
-    }
-
-
-async function syncToGoogleDrive(data) {
-  try {
-    const rows = [];
-    rows.push(["類別","持有人","名稱","金額","補充1","補充2","補充3","備註","ID"]);
-    data.stocks.forEach(r=>rows.push(["股票",r.owner,r.name||"",r.amount||0,`類型:${r.type||"股票"}`,`成本:${r.cost||""}`,``,r.note||"",r.id]));
-    data.bank.forEach(r=>rows.push(["銀行存款",r.owner,r.bank||"",r.amount||0,`末五碼:${r.account||""}`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
-    data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%`,`幣別:${r.currency||"NTD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
-    (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id]));
-    data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"NTD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymentDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id]));
-    (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,"",r.note||"",r.id]));
-    (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,"",r.note||"",r.id]));
-    
     const res = await fetch(MY_GAS_URL, {
       method: "POST",
       body: JSON.stringify({
@@ -168,21 +135,110 @@ async function syncToGoogleDrive(data) {
         data: rows
       })
     });
-
     const result = await res.json();
-    
     if (result && result.success === true) {
       return true;
     } else {
       console.error("Google 拒絕寫入，原因:", result ? result.error : "未知錯誤");
       return false;
     }
-
-  } catch (err) { 
+  } catch (err) {
     console.error("連線拋出異常:", err);
-    return false; 
+    return false;
   }
-} // 👈 這裡最後只會精準保留一個關閉整個函數的大括號
+}
+
+// 把 GAS 回傳的二維 rows 陣列解析回 {stocks:[], bank:[], ...} 物件
+function parseRowsToData(rows) {
+  // rows[0] 是 header，從 rows[1] 開始是資料
+  const result = { stocks:[], bank:[], fixed:[], mortgage:[], insurance:[], expense:[], travel:[] };
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[0]) continue;
+    const type  = String(r[0] || "").trim();
+    const owner = String(r[1] || "").trim();
+    const name  = String(r[2] || "").trim();
+    const amount= r[3];
+    const sup1  = String(r[4] || "");
+    const sup2  = String(r[5] || "");
+    const sup3  = String(r[6] || "");
+    const note  = String(r[7] || "").trim();
+    const id    = String(r[8] || Date.now() + i);
+
+    function val(str, key) {
+      const m = str.match(new RegExp(key + ":([^|,]*)"));
+      return m ? m[1].trim() : "";
+    }
+
+    if (type === "股票") {
+      result.stocks.push({ id, owner, name: name.replace(/\(.*\)$/,"").trim(),
+        ticker: (name.match(/\((.+)\)$/)||[])[1]||"",
+        amount: Number(amount)||0, type: val(sup1,"類型")||"股票",
+        cost: val(sup1,"成本"), note });
+    } else if (type === "銀行存款") {
+      result.bank.push({ id, owner, bank: name, account: val(sup1,"末五碼"),
+        amount: Number(amount)||0, currency: val(sup2,"幣別")||"NTD",
+        exchangeRate: val(sup2,"匯率"), note });
+    } else if (type === "定存") {
+      result.fixed.push({ id, owner, bank: name, amount: Number(amount)||0,
+        rate: val(sup1,"利率").replace("%",""), currency: val(sup2,"幣別")||"NTD",
+        exchangeRate: val(sup2,"匯率"), note });
+    } else if (type === "房貸") {
+      result.mortgage.push({ id, owner, houseName: name,
+        totalAmount: Number(amount)||0,
+        monthlyPayment: val(sup1,"每月"), totalMonths: val(sup1,"總期"),
+        paidMonths: val(sup1,"已繳"), bank: val(sup1,"銀行"),
+        rate: val(sup2,"利率"), startDate: val(sup2,"起貸"),
+        remainingPrincipal: val(sup3,"剩餘本金"),
+        estimatedInterest: val(sup3,"預估利息"),
+        paidMonthsUpdatedAt: val(sup3,"已繳更新"), note });
+    } else if (type === "保單") {
+      result.insurance.push({ id, owner, product: name,
+        periodAmount: Number(amount)||0,
+        amount: val(sup1,"保額"), company: val(sup1,"公司"), insured: val(sup1,"被保人"),
+        type: val(sup2,"類型")||"壽險", currency: val(sup2,"幣別")||"NTD",
+        exchangeRateIns: val(sup2,"匯率"),
+        totalPeriods: val(sup3,"總期"), paidPeriods: val(sup3,"已繳"),
+        paymentMonths: val(sup3,"扣款月"), lastPaymentDate: val(sup3,"最後繳"),
+        status: val(sup3,"狀態")||"未繳完", note });
+    } else if (type === "固定開銷") {
+      result.expense.push({ id, payer: owner||"共同", name,
+        amount: Number(amount)||0, category: val(sup1,"類別"),
+        freq: val(sup2,"頻率")||"每月", note });
+    } else if (type === "出國紀錄") {
+      result.travel.push({ id, destination: name,
+        totalAmount: Number(amount)||0,
+        dateRange: val(sup1,"日期"), travelers: val(sup2,"人數"), note });
+    }
+  }
+  return result;
+}
+
+async function loadFromGoogleDrive() {
+  try {
+    const pwd = localStorage.getItem("asset_password") || DEFAULT_PASSWORD;
+    const res = await fetch(MY_GAS_URL + "?pwd=" + encodeURIComponent(pwd));
+    const result = await res.json();
+
+    if (!result || result.success !== true) {
+      console.error("❌ GAS 拒絕存取:", result ? result.error : "無回應");
+      return null;
+    }
+
+    // data 是二維 rows 陣列
+    if (Array.isArray(result.data) && result.data.length > 1) {
+      const parsed = parseRowsToData(result.data);
+      console.log("✅ 解析完成，筆數:", Object.entries(parsed).map(([k,v])=>k+":"+v.length).join(", "));
+      return parsed;
+    }
+
+    console.error("❌ GAS data 格式異常:", result.data);
+    return null;
+  } catch (err) {
+    console.error("loadFromGoogleDrive 異常:", err);
+    return null;
+  }
+}
 
 
 // ── Shared UI ─────────────────────────────────────────────────
@@ -494,34 +550,35 @@ function ChangePasswordModal({onSave,onClose}){
   const [current,setCurrent]=useState(""),  [next,setNext]=useState(""),  [confirm,setConfirm]=useState(""),  [error,setError]=useState("");
   const storedPw=localStorage.getItem("asset_password")||DEFAULT_PASSWORD;
   const submit = () => {
-    const stored = localStorage.getItem("asset_password") || DEFAULT_PASSWORD;
-    const checkUrl = MY_GAS_URL + "?pwd=" + encodeURIComponent(pw); 
-    
+    if (!current) { setError("請輸入目前密碼"); return; }
+    if (!next) { setError("請輸入新密碼"); return; }
+    if (next !== confirm) { setError("兩次新密碼不一致"); return; }
+    // 先向 GAS 驗證舊密碼
+    const checkUrl = MY_GAS_URL + "?pwd=" + encodeURIComponent(current);
     fetch(checkUrl)
       .then(res => res.json())
       .then(res => {
         if (res.success) {
-          localStorage.setItem("asset_password", pw);
-          
-          // 🚀 核心大改進：完美對接原廠 asset_data 快取記憶體！
-          if (res.data) {
-            localStorage.setItem("asset_data", JSON.stringify(res.data));
-            
-            // 防呆觸發 React 的重新渲染狀態
-            if (typeof setData === 'function') { setData(res.data); }
-          }
-          
-          onUnlock(); 
+          // 舊密碼驗證通過，向 GAS 更新密碼
+          fetch(MY_GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "changePassword", oldPwd: current, newPwd: next })
+          })
+          .then(r => r.json())
+          .then(r => {
+            if (r.success) {
+              localStorage.setItem("asset_password", next);
+              onSave();
+            } else {
+              setError("密碼更新失敗：" + (r.error || "未知錯誤"));
+            }
+          })
+          .catch(() => setError("連線失敗，請稍後再試"));
         } else {
-          setError(true);
-          setShake(true);
-          setPw("");
-          setTimeout(() => setShake(false), 500);
+          setError("目前密碼錯誤");
         }
       })
-      .catch(err => {
-        alert("連線失敗，請檢查網路或 GAS 部署設定。錯誤原因: " + err.message);
-      });
+      .catch(() => setError("連線失敗，請稍後再試"));
   };
 
 
@@ -537,37 +594,34 @@ function ChangePasswordModal({onSave,onClose}){
 }
 
 function PasswordScreen({onUnlock}){
-  const [pw,setPw]=useState(""),  [error,setError]=useState(false),  [shake,setShake]=useState(false);
+  const [pw,setPw]=useState(""),  [error,setError]=useState(false),  [shake,setShake]=useState(false), [loading,setLoading]=useState(false);
   const submit=()=>{
-    const stored=localStorage.getItem("asset_password")||DEFAULT_PASSWORD;
-    
-    // ⬇️ 這裡開始是幫你換成「向 Google 驗證密碼」的新寫法
+    if(!pw||loading) return;
+    setLoading(true);
+    setError(false);
     const checkUrl = MY_GAS_URL + "?pwd=" + encodeURIComponent(pw);
-
-    
     fetch(checkUrl)
       .then(res => res.json())
       .then(res => {
         if (res.success) {
-          localStorage.setItem("asset_password", pw); // 登入成功，記錄密碼
-          
-          // 💡 關鍵提醒：
-          // 如果你的網頁內建有 setData(res.data) 或是其他把資料存進網頁的指令，
-          // 請記得在這一行手動補上去喔！
-          
-          onUnlock(); // 解鎖畫面
+          localStorage.setItem("asset_password", pw);
+          if(res.data && typeof res.data==="object" && !Array.isArray(res.data)){
+            localStorage.setItem("asset_data", JSON.stringify(res.data));
+          }
+          onUnlock();
         } else {
-          // 密碼錯誤，執行原本的震動與錯誤提示
+          setLoading(false);
           setError(true);
           setShake(true);
           setPw("");
           setTimeout(() => setShake(false), 500);
         }
       })
-      .catch(err => {
+      .catch(() => {
+        setLoading(false);
         alert("連線失敗，請檢查網路或 GAS 部署設定");
       });
-    };
+  };
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}`}</style>
@@ -577,10 +631,10 @@ function PasswordScreen({onUnlock}){
       <div style={{width:"100%",maxWidth:320,animation:shake?"shake 0.4s ease":"none"}}>
         <div style={{...cardStyle,padding:28}}>
           <label style={{...labelStyle,textAlign:"center",display:"block",marginBottom:12}}>🔑 密碼</label>
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setError(false);}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="請輸入密碼" autoFocus
-            style={{...inputStyle,textAlign:"center",fontSize:22,letterSpacing:8,border:error?`2px solid ${C.danger}`:inputStyle.border}}/>
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setError(false);}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="請輸入密碼" autoFocus disabled={loading}
+            style={{...inputStyle,textAlign:"center",fontSize:22,letterSpacing:8,border:error?`2px solid ${C.danger}`:inputStyle.border,opacity:loading?0.6:1}}/>
           {error&&<p style={{color:C.danger,fontSize:13,textAlign:"center",margin:"8px 0 0"}}>密碼錯誤，請再試一次</p>}
-          <div style={{marginTop:16}}><BrownBtn onClick={submit}>確認進入</BrownBtn></div>
+          <div style={{marginTop:16}}><BrownBtn onClick={submit}>{loading?"⏳ 驗證中…":"確認進入"}</BrownBtn></div>
         </div>
       </div>
     </div>
@@ -816,8 +870,25 @@ function App(){
   const loadFromDrive=async()=>{
     setSyncStatus("loading");
     const loaded=await loadFromGoogleDrive();
-    if(loaded){const clean=dedupeData({...DEFAULT_DATA,...loaded});setData(clean);const now=new Date().toISOString();setLastUpdated(now);localStorage.setItem("asset_last_updated",now);localStorage.setItem("asset_data",JSON.stringify(clean));setSyncStatus("success");}
-    else setSyncStatus("error");
+    if(loaded && typeof loaded==="object" && !Array.isArray(loaded)){
+      const keys=["stocks","bank","fixed","mortgage","insurance","expense","travel"];
+      const merged={};
+      keys.forEach(k=>{
+        const remote=loaded[k];
+        const local=(data[k]||[]);
+        merged[k]=(Array.isArray(remote))?remote:local;
+      });
+      const clean=dedupeData({...DEFAULT_DATA,...merged});
+      setData(clean);
+      const now=new Date().toISOString();
+      setLastUpdated(now);
+      localStorage.setItem("asset_last_updated",now);
+      localStorage.setItem("asset_data",JSON.stringify(clean));
+      setSyncStatus("success");
+    } else {
+      console.error("loadFromDrive: GAS 回傳格式異常，保留本地資料", loaded);
+      setSyncStatus("error");
+    }
     setTimeout(()=>setSyncStatus("idle"),3000);
   };
 
