@@ -540,6 +540,7 @@ function PasswordScreen({onUnlock}){
       .catch(err => {
         alert("連線失敗，請檢查網路或 GAS 部署設定");
       });
+    };
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}`}</style>
