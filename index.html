@@ -115,7 +115,7 @@ function dataToCSV(data) {
   return rows.join("\n");
 }
 
-const URL = "https://script.google.com/macros/s/AKfycbzG9PnJX3z_k6da3vmLaX_VAoaCcdOPn-yZL3kZ0bwv-ktdzZftVNdDeNRuiqkJrx_9Zg/exec";
+const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbzG9PnJX3z_k6da3vmLaX_VAoaCcdOPn-yZL3kZ0bwv-ktdzZftVNdDeNRuiqkJrx_9Zg/exec";
 
 async function syncToGoogleDrive(data) {
   try {
@@ -148,7 +148,7 @@ async function syncToGoogleDrive(data) {
 
 async function loadFromGoogleDrive() {
   try {
-    const res = await fetch(URL);
+    const res = await fetch(MY_GAS_URL);
     const result = await res.json();
     if (!result.success || !result.data || result.data.length < 2) return null;
     const rows = result.data.slice(1);
@@ -537,7 +537,7 @@ function PasswordScreen({onUnlock}){
     const stored=localStorage.getItem("asset_password")||DEFAULT_PASSWORD;
     
     // ⬇️ 這裡開始是幫你換成「向 Google 驗證密碼」的新寫法
-    const checkUrl = URL + "?pwd=" + encodeURIComponent(pw);
+    const checkUrl = MY_GAS_URL + "?pwd=" + encodeURIComponent(pw);
 
     
     fetch(checkUrl)
