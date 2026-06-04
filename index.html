@@ -14,7 +14,8 @@
     body { background: #F5F0E8; font-family: "Noto Sans TC", sans-serif; }
     input::placeholder { color: #C0B0A0; }
     select { font-family: inherit; }
-  </style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
   <div id="root"></div>
@@ -968,6 +969,7 @@ function App(){
   const [modal,setModal]=useState(null);
   const [editItem,setEditItem]=useState(null);
   const [syncStatus,setSyncStatus]=useState("idle");
+  const [cloudLoaded,setCloudLoaded]=useState(false); // 本 session 是否已從雲端載入
   const [pwChanged,setPwChanged]=useState(false);
   const [expenseFreqFilter,setExpenseFreqFilter]=useState("全部");
   const [sortConfig,setSortConfig]=useState({});
@@ -1009,6 +1011,7 @@ function App(){
       localStorage.setItem("asset_last_updated",now);
       localStorage.setItem("asset_data",JSON.stringify(clean));
       setSyncStatus("success");
+      setCloudLoaded(true);
     } else {
       console.error("loadFromDrive: GAS 回傳格式異常，保留本地資料", loaded);
       setSyncStatus("error");
@@ -1264,6 +1267,13 @@ function App(){
         </div>
       </div>
 
+      {/* 載入中全頁遮罩 */}
+      {syncStatus==="loading"&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.45)",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+        <div style={{width:48,height:48,border:"5px solid rgba(255,255,255,0.3)",borderTop:"5px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}></div>
+        <div style={{color:"#fff",fontSize:16,fontWeight:700}}>從雲端載入資料中…</div>
+        <div style={{color:"rgba(255,255,255,0.7)",fontSize:13}}>GAS 冷啟動約需 3–10 秒，請稍候</div>
+      </div>}
+
       {/* Tabs */}
       <div style={{background:C.card,borderBottom:`1px solid ${C.border}`,display:"flex",overflowX:"auto",padding:"0 10px"}}>
         {TABS.map(t=>(
@@ -1397,8 +1407,9 @@ function App(){
           </div>
 
           {lastUpdated&&<div style={{textAlign:"center",color:C.textMuted,fontSize:12,marginTop:4,padding:"10px",background:C.card,borderRadius:10,border:`1px solid ${C.border}`}}>🕐 最後更新：{formatDateTime(lastUpdated)}</div>}
-          {!lastUpdated&&<div style={{textAlign:"center",fontSize:13,marginTop:4,padding:"12px 16px",background:"#FFF3CD",borderRadius:10,border:"1px solid #FBBF24",color:"#92400E"}}>
-            ⚠️ 初次開啟或新裝置，請先按右上角 <strong>☁️ 載入</strong> 取得最新資料，再進行編輯
+          {!cloudLoaded&&<div style={{textAlign:"center",fontSize:13,marginTop:8,padding:"14px 16px",background:"#FFF3CD",borderRadius:12,border:"2px solid #FBBF24",color:"#92400E",lineHeight:1.7}}>
+            ⚠️ <strong>每次開啟請先從雲端載入最新資料</strong><br/>
+            <span style={{fontSize:12}}>按右上角 <strong>☁️ 載入</strong>，確認右上角顯示「✅ 已上傳雲端」後再進行編輯</span>
           </div>}
         </>)}
 
