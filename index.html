@@ -1016,12 +1016,7 @@ function App(){
     setTimeout(()=>setSyncStatus("idle"),3000);
   },[]);
 
-  // 登入後背景靜默同步 GAS（不清空畫面，localStorage 資料先顯示）
-  useEffect(()=>{
-    if(unlocked && MY_GAS_URL && MY_GAS_URL !== "YOUR_GAS_URL_HERE"){
-      loadFromDrive();
-    }
-  },[unlocked, loadFromDrive]);
+
 
   const handleUnlock=()=>{sessionStorage.setItem("asset_unlocked","1");setUnlocked(true);};
   const handleLock=()=>{sessionStorage.removeItem("asset_unlocked");setUnlocked(false);};
@@ -1402,6 +1397,9 @@ function App(){
           </div>
 
           {lastUpdated&&<div style={{textAlign:"center",color:C.textMuted,fontSize:12,marginTop:4,padding:"10px",background:C.card,borderRadius:10,border:`1px solid ${C.border}`}}>🕐 最後更新：{formatDateTime(lastUpdated)}</div>}
+          {!lastUpdated&&<div style={{textAlign:"center",fontSize:13,marginTop:4,padding:"12px 16px",background:"#FFF3CD",borderRadius:10,border:"1px solid #FBBF24",color:"#92400E"}}>
+            ⚠️ 初次開啟或新裝置，請先按右上角 <strong>☁️ 載入</strong> 取得最新資料，再進行編輯
+          </div>}
         </>)}
 
         {/* ── STOCKS ── */}
