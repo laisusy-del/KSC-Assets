@@ -1392,33 +1392,26 @@ function App(){
             </>);
           })()}
 
-          {/* Bank foreign currency detail in dashboard */}
-          {data.bank.some(r=>r.currency&&r.currency!=="TWD")&&(
-            <div style={{...cardStyle,marginBottom:10,padding:"14px 16px"}}>
-              <div style={{fontSize:13,color:C.textLight,fontWeight:700,marginBottom:8}}>🌏 外幣存款明細</div>
-              {data.bank.filter(r=>r.currency&&r.currency!=="TWD").filter(r=>ownerFilter==="all"||r.owner===ownerFilter).map(r=>(
-                <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <OwnerTag owner={r.owner}/>
-                    <span style={{fontSize:13,color:C.text}}>{r.bank}</span>
-                    <Tag color={C.travel}>{r.currency}</Tag>
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:13,fontWeight:700,color:C.brownDark}}>{formatCurrency(r.amount,r.currency)}</div>
-                    {r.exchangeRate&&<div style={{fontSize:11,color:C.textMuted}}>≈ {formatTWD(toTWD(r.amount,r.currency,r.exchangeRate))}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+
 
           {/* Mortgage card */}
-          <div onClick={()=>setTab("mortgage")} style={{...cardStyle,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div>
-              <div style={{fontWeight:700,fontSize:14,color:C.brownDark,marginBottom:4}}>🏠 房貸 <Tag color={C.mortgage}>不計資產</Tag></div>
-              <div style={{color:C.textMuted,fontSize:12}}>剩餘本金：<span style={{color:C.danger,fontWeight:700}}>{formatTWD(filteredMortgages.reduce((s,r)=>s+(Number(r.remainingPrincipal)||0),0)||mortgageRemaining)}</span></div>
+          <div onClick={()=>setTab("mortgage")} style={{...cardStyle,cursor:"pointer",marginBottom:10,padding:"14px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontWeight:700,fontSize:14,color:C.brownDark}}>🏠 房貸</div>
+              <div style={{color:C.textMuted,fontSize:11}}>{filteredMortgages.length} 筆 ›</div>
             </div>
-            <div style={{textAlign:"right"}}><div style={{color:C.mortgage,fontWeight:800,fontSize:15}}>每月 {formatTWD(mortgageMonthly)}</div><div style={{color:C.textMuted,fontSize:11}}>{filteredMortgages.length} 筆 ›</div></div>
+            <div style={{display:"flex",gap:8}}>
+              <div style={{flex:1,background:C.success+"15",borderRadius:10,padding:"8px 12px"}}>
+                <div style={{fontSize:11,color:C.success,fontWeight:700,marginBottom:2}}>💰 已付出（計入資產）</div>
+                <div style={{fontSize:14,fontWeight:900,color:C.success}}>{formatTWD(mortgagePaidAsset(filteredMortgages))}</div>
+                <div style={{fontSize:10,color:C.textMuted,marginTop:1}}>頭期款 ＋ 已繳房貸</div>
+              </div>
+              <div style={{flex:1,background:C.danger+"10",borderRadius:10,padding:"8px 12px"}}>
+                <div style={{fontSize:11,color:C.danger,fontWeight:700,marginBottom:2}}>⛔ 剩餘負債</div>
+                <div style={{fontSize:14,fontWeight:900,color:C.danger}}>{formatTWD(filteredMortgages.reduce((s,r)=>s+(Number(r.remainingPrincipal)||0),0)||mortgageRemaining)}</div>
+                <div style={{fontSize:10,color:C.textMuted,marginTop:1}}>每月還款 {formatTWD(mortgageMonthly)}</div>
+              </div>
+            </div>
           </div>
 
           <div onClick={()=>setTab("expense")} style={{...cardStyle,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
