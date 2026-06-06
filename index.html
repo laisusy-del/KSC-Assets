@@ -1069,21 +1069,23 @@ function App(){
     return s+paidAmt;
   },0);
 
-  // 房貸不計入資產（僅追蹤負債）
+  // 房貸已付出計入資產（頭期款 + 已繳房貸）
+  const mortgagePaidAsset=(arr,owner)=>(arr||[]).filter(r=>!owner||(r.owner===owner)).reduce((s,r)=>
+    s+(Number(r.downPayment)||0)+(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0),0);
 
   const totalAssets=(filterArr([...data.stocks,...data.bank,...data.fixed])).reduce((s,r)=>{
     const t=r.currency?toTWD(r.amount,r.currency,r.exchangeRate):Number(r.amount)||0;
     return s+t;
-  },0)+savingsInsuranceAsset(filterArr(data.insurance));
-  const KKTotal=[...filterArr(data.stocks)].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(filterArr(data.bank),"KK")+fixedTWD(filterArr(data.fixed),"KK")+savingsInsuranceAsset(data.insurance,"KK");
-  const SSTotal=[...filterArr(data.stocks).filter(r=>r.owner==="SS")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"SS")+fixedTWD(data.fixed,"SS")+savingsInsuranceAsset(data.insurance,"SS");
-  const childTotal=[...data.stocks.filter(r=>r.owner==="BB")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"BB")+fixedTWD(data.fixed,"BB")+savingsInsuranceAsset(data.insurance,"BB");
+  },0)+savingsInsuranceAsset(filterArr(data.insurance))+mortgagePaidAsset(filterArr(data.mortgage));
+  const KKTotal=[...filterArr(data.stocks)].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(filterArr(data.bank),"KK")+fixedTWD(filterArr(data.fixed),"KK")+savingsInsuranceAsset(data.insurance,"KK")+mortgagePaidAsset(data.mortgage,"KK");
+  const SSTotal=[...filterArr(data.stocks).filter(r=>r.owner==="SS")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"SS")+fixedTWD(data.fixed,"SS")+savingsInsuranceAsset(data.insurance,"SS")+mortgagePaidAsset(data.mortgage,"SS");
+  const childTotal=[...data.stocks.filter(r=>r.owner==="BB")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"BB")+fixedTWD(data.fixed,"BB")+savingsInsuranceAsset(data.insurance,"BB")+mortgagePaidAsset(data.mortgage,"BB");
 
   // per-person totals used in dashboard
   const personTotal={
-    KK:[...data.stocks.filter(r=>r.owner==="KK")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"KK")+fixedTWD(data.fixed,"KK")+savingsInsuranceAsset(data.insurance,"KK"),
-    SS:[...data.stocks.filter(r=>r.owner==="SS")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"SS")+fixedTWD(data.fixed,"SS")+savingsInsuranceAsset(data.insurance,"SS"),
-    "BB":[...data.stocks.filter(r=>r.owner==="BB")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"BB")+fixedTWD(data.fixed,"BB")+savingsInsuranceAsset(data.insurance,"BB"),
+    KK:[...data.stocks.filter(r=>r.owner==="KK")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"KK")+fixedTWD(data.fixed,"KK")+savingsInsuranceAsset(data.insurance,"KK")+mortgagePaidAsset(data.mortgage,"KK"),
+    SS:[...data.stocks.filter(r=>r.owner==="SS")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"SS")+fixedTWD(data.fixed,"SS")+savingsInsuranceAsset(data.insurance,"SS")+mortgagePaidAsset(data.mortgage,"SS"),
+    "BB":[...data.stocks.filter(r=>r.owner==="BB")].reduce((s,r)=>s+(Number(r.amount)||0),0)+bankTWD(data.bank,"BB")+fixedTWD(data.fixed,"BB")+savingsInsuranceAsset(data.insurance,"BB")+mortgagePaidAsset(data.mortgage,"BB"),
   };
   const grandTotal=Object.values(personTotal).reduce((s,v)=>s+v,0);
 
@@ -1180,7 +1182,7 @@ function App(){
       const isSavings=r.type==="儲蓄險";
       return <span style={{display:"flex",gap:4}}>
         <Tag color={isSavings?C.success:C.accent}>{r.type||"壽險"}</Tag>
-        <Tag color={r.status==="已繳完"?C.success:C.textMuted}>{r.status}</Tag>
+        {r.status&&<Tag color={r.status==="已繳完"?C.success:C.textMuted}>{r.status}</Tag>}
       </span>;
     },
     amountColor:C.brownLight,
@@ -1196,9 +1198,9 @@ function App(){
         {label:"幣別",value:curr==="TWD"?"TWD":curr},
         {label:"保額",value:r.amount?`${curr==="TWD"?"$ ":"$ "}${Number(r.amount).toLocaleString()} ${curr==="TWD"?"":curr}`:""},
         {label:"每期金額",value:r.periodAmount?`${curr==="TWD"?"$ ":"$ "}${Number(r.periodAmount).toLocaleString()} ${curr==="TWD"?"":curr}`:""},
-        {label:"總繳期數",value:r.totalPeriods?`${r.totalPeriods} 期`:""},
-        {label:"已繳期數",value:r.paidPeriods?`${r.paidPeriods} 期`:""},
-        {label:"未繳期數",value:rem>0?`${rem} 期`:""},
+        {label:"總繳期數",value:r.totalPeriods?<span>{r.totalPeriods} 期 <span style={{color:C.textMuted,fontWeight:400,fontSize:12}}>（{fmtP(r.totalPeriods)}）</span></span>:""},
+        {label:"已繳期數",value:r.paidPeriods?<span>{r.paidPeriods} 期 <span style={{color:C.textMuted,fontWeight:400,fontSize:12}}>（{fmtP(r.paidPeriods)}）</span></span>:""},
+        {label:"未繳期數",value:rem>0?<span>{rem} 期 <span style={{color:C.textMuted,fontWeight:400,fontSize:12}}>（{fmtP(rem)}）</span></span>:""},
         {label:"尚需繳納",value:remAmt?<span style={{color:C.danger,fontWeight:700}}>{curr==="TWD"?"$ ":"$ "}{remAmt.toLocaleString()} {curr==="TWD"?"":curr}</span>:""},
         isSavings?{label:"已繳資產值（含外幣換算）",value:paidAmt?<span style={{color:C.success,fontWeight:700}}>$ {toTWD(paidAmt,curr,r.exchangeRateIns).toLocaleString()}<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:4}}>{curr!=="TWD"?` (原幣 ${paidAmt.toLocaleString()} ${curr})`:"TWD"}</span></span>:""}:{label:"",value:""},
         {label:"被保險人",value:r.insured},
@@ -1208,6 +1210,7 @@ function App(){
     }
   };
 
+  const fmtP=m=>{const mo=Number(m)||0;if(!mo)return"";const y=Math.floor(mo/12);const mm=mo%12;return y>0&&mm>0?`${y}年${mm}個月`:y>0?`${y}年`:`${mm}個月`;};
   const mortgageFields={
     ownerTag:r=><OwnerTag owner={r.owner}/>,
     title:r=>r.houseName||r.bank||"房貸",
@@ -1218,23 +1221,34 @@ function App(){
     mainAmount:r=>formatTWD(r.monthlyPayment),
     subAmount:r=>{
       const rem=Math.max(0,(Number(r.totalMonths)||0)-(Number(r.paidMonths)||0));
-      return rem>0?`剩 ${rem} 期`:null;
+      if(!rem) return null;
+      const y=Math.floor(rem/12),m=rem%12;
+      const ymStr=y>0&&m>0?`${y}年${m}個月`:y>0?`${y}年`:`${m}個月`;
+      return `剩 ${rem} 期（${ymStr}）`;
     },
     amountColor:C.mortgage,
     details:r=>{
       const rem=Math.max(0,(Number(r.totalMonths)||0)-(Number(r.paidMonths)||0));
       const remAmt=rem*(Number(r.monthlyPayment)||0);
+      const paidAmt=(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0);
+      const dp=Number(r.downPayment)||0;
+      const hp=Number(r.housePrice)||0;
+      const grandPaid=paidAmt+dp;
       return [
         {label:"房屋名稱",value:r.houseName},
         {label:"銀行",value:r.bank},
+        {label:"🏷️ 房屋購買金額",value:hp?<span style={{color:C.brownDark,fontWeight:700}}>{formatTWD(hp)}</span>:""},
         {label:"貸款總額",value:formatTWD(r.totalAmount)},
-        {label:"總期數",value:r.totalMonths?`${r.totalMonths} 期`:""},
-        {label:"已繳期數",value:r.paidMonths?<span>{r.paidMonths} 期{r.paidMonthsUpdatedAt&&<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>（{r.paidMonthsUpdatedAt} 更新）</span>}</span>:""},
-        {label:"剩餘期數",value:rem?`${rem} 期`:""},
-        {label:"💰 已繳金額",value:(r.paidMonths&&r.monthlyPayment)?<span style={{color:C.success,fontWeight:700}}>{formatTWD((Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0))}<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>{r.paidMonths} 期 × {Number(r.monthlyPayment).toLocaleString()}</span></span>:""},
-        {label:"⏳ 剩餘還款",value:remAmt?<span style={{color:C.danger,fontWeight:700}}>{formatTWD(remAmt)}<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>{Number(r.monthlyPayment).toLocaleString()} × {rem} 期</span></span>:""},
         {label:"利率",value:r.rate?`${r.rate}%`:""},{label:"起貸日",value:r.startDate},
-        {label:"─ 銀行對帳數據 ─",value:""},
+        {label:"總期數",value:r.totalMonths?`${r.totalMonths} 期`:""},
+        {label:"已繳期數",value:r.paidMonths?<span>{r.paidMonths} 期 <span style={{color:C.textMuted,fontWeight:400,fontSize:12}}>（{fmtP(r.paidMonths)}）</span>{r.paidMonthsUpdatedAt&&<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>更新：{r.paidMonthsUpdatedAt}</span>}</span>:""},
+        {label:"剩餘期數",value:rem?<span>{rem} 期 <span style={{color:C.textMuted,fontWeight:400,fontSize:12}}>（{fmtP(rem)}）</span></span>:""},
+        {label:"── 金額摘要 ──",value:""},
+        {label:"💵 頭期款（自備款）",value:dp?<span style={{color:C.success,fontWeight:700}}>{formatTWD(dp)}</span>:""},
+        {label:"✅ 已繳房貸",value:paidAmt?<span style={{color:C.success,fontWeight:700}}>{formatTWD(paidAmt)}<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>{r.paidMonths} 期 × {Number(r.monthlyPayment).toLocaleString()}</span></span>:""},
+        {label:"⛔ 未繳房貸",value:remAmt?<span style={{color:C.danger,fontWeight:700}}>{formatTWD(remAmt)}<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>{Number(r.monthlyPayment).toLocaleString()} × {rem} 期</span></span>:""},
+        {label:"💰 已付出合計",value:(grandPaid>0)?<span style={{color:C.success,fontSize:14,fontWeight:900}}>{formatTWD(grandPaid)}{dp>0&&paidAmt>0&&<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>（頭期 + 已繳房貸）</span>}</span>:""},
+        {label:"── 銀行對帳數據 ──",value:""},
         {label:"📌 剩餘本金（銀行）",value:r.remainingPrincipal?<span style={{color:C.mortgage,fontWeight:700}}>{formatTWD(r.remainingPrincipal)}</span>:""},
         {label:"📌 預估剩餘利息",value:(r.remainingPrincipal&&remAmt)?<span style={{color:"#C47A5A",fontWeight:700}}>{formatTWD(Math.max(0,remAmt-(Number(r.remainingPrincipal)||0)))}<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:6}}>（剩餘還款 − 剩餘本金）</span></span>:""},
       ];
@@ -1448,60 +1462,86 @@ function App(){
             const totalLoaned=filteredMortgages.reduce((s,r)=>s+(Number(r.totalAmount)||0),0);
             const totalPaidAmount=filteredMortgages.reduce((s,r)=>s+(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0),0);
             const totalDownPayment=filteredMortgages.reduce((s,r)=>s+(Number(r.downPayment)||0),0);
+            const totalUnpaid=filteredMortgages.reduce((s,r)=>s+Math.max(0,(Number(r.totalMonths)||0)-(Number(r.paidMonths)||0))*(Number(r.monthlyPayment)||0),0);
             const grandTotalPaid=totalPaidAmount+totalDownPayment;
+            const fmtPeriod=m=>{const mo=Number(m)||0;if(!mo)return"";const y=Math.floor(mo/12);const mm=mo%12;return y>0&&mm>0?`${y}年${mm}個月`:y>0?`${y}年`:`${mm}個月`;};
             return(<>
               {/* Overview */}
               <div style={{background:`linear-gradient(135deg,${C.mortgage}22,${C.mortgage}08)`,border:`1px solid ${C.mortgage}33`,borderRadius:14,padding:"16px",marginBottom:14}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div style={{fontWeight:800,color:C.mortgage,fontSize:14}}>📊 房貸總覽</div>
-                  <Tag color={C.mortgage}>不列入資產</Tag>
+                  <Tag color={C.success}>已付出計入資產</Tag>
                 </div>
+                {/* Top pills */}
                 <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
                   <StatPill label="每月還款" value={mortgageMonthly} color={C.mortgage}/>
                   {totalRemPrincipal>0&&<StatPill label="📌 剩餘本金" value={totalRemPrincipal} color={C.danger}/>}
                   {totalRemPrincipal===0&&<StatPill label="⏳ 試算剩餘" value={mortgageRemaining} color={C.danger}/>}
                   {totalEstInterest>0&&<StatPill label="💸 預估剩餘利息" value={totalEstInterest} color={"#C47A5A"}/>}
                 </div>
-                {(totalPaidAmount>0||totalDownPayment>0)&&(
-                  <div style={{background:C.success+"18",border:`1px solid ${C.success}44`,borderRadius:12,padding:"12px 16px",marginBottom:4}}>
-                    <div style={{fontSize:12,color:C.success,fontWeight:700,marginBottom:8}}>💰 已繳總金額</div>
-                    {filteredMortgages.filter(r=>r.paidMonths&&r.monthlyPayment||r.downPayment||r.housePrice).map(r=>{
-                      const mortgagePaid=(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0);
+
+                {/* Per-house breakdown table */}
+                {filteredMortgages.length>0&&(
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+                    <div style={{fontSize:12,color:C.brownDark,fontWeight:800,marginBottom:10}}>📋 各房屋明細</div>
+                    {filteredMortgages.map(r=>{
                       const dp=Number(r.downPayment)||0;
-                      const hp=Number(r.housePrice)||0;
+                      const paid=(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0);
+                      const rem=Math.max(0,(Number(r.totalMonths)||0)-(Number(r.paidMonths)||0));
+                      const unpaid=rem*(Number(r.monthlyPayment)||0);
+                      const sub=dp+paid;
                       return(
-                        <div key={r.id} style={{marginBottom:10,paddingBottom:10,borderBottom:`1px dashed ${C.success}33`}}>
-                          <div style={{fontSize:13,color:C.text,fontWeight:700,marginBottom:5}}>{r.houseName||r.bank||"房貸"}{hp>0&&<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:8}}>購買金額 {formatTWD(hp)}</span>}</div>
-                          {dp>0&&(
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                              <span style={{fontSize:12,color:C.textMuted}}>自備款</span>
-                              <span style={{fontSize:12,color:C.success,fontWeight:600}}>{formatTWD(dp)}</span>
+                        <div key={r.id} style={{marginBottom:12,paddingBottom:12,borderBottom:`1px dashed ${C.border}`}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                            <span style={{fontSize:13,fontWeight:800,color:C.brownDark}}>{r.houseName||r.bank||"房貸"}</span>
+                            {r.housePrice&&<span style={{fontSize:11,color:C.textMuted}}>購買 {formatTWD(r.housePrice)}</span>}
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
+                            <div style={{background:C.success+"15",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                              <div style={{fontSize:10,color:C.success,fontWeight:700,marginBottom:2}}>💵 頭期款</div>
+                              <div style={{fontSize:12,fontWeight:800,color:C.success}}>{dp?formatTWD(dp):"—"}</div>
                             </div>
-                          )}
-                          {mortgagePaid>0&&(
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                              <span style={{fontSize:12,color:C.textMuted}}>房貸已繳 <span style={{fontSize:11}}>（{r.paidMonths} 期 × {Number(r.monthlyPayment).toLocaleString()}）</span></span>
-                              <span style={{fontSize:12,color:C.success,fontWeight:600}}>{formatTWD(mortgagePaid)}</span>
+                            <div style={{background:C.success+"15",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                              <div style={{fontSize:10,color:C.success,fontWeight:700,marginBottom:2}}>✅ 已繳房貸</div>
+                              <div style={{fontSize:12,fontWeight:800,color:C.success}}>{paid?formatTWD(paid):"—"}</div>
+                              {r.paidMonths&&<div style={{fontSize:9,color:C.textMuted,marginTop:1}}>{fmtPeriod(r.paidMonths)}</div>}
                             </div>
-                          )}
-                          {(dp>0||mortgagePaid>0)&&(
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4,paddingTop:4,borderTop:`1px solid ${C.success}22`}}>
-                              <span style={{fontSize:12,color:C.success,fontWeight:700}}>小計</span>
-                              <span style={{fontSize:13,color:C.success,fontWeight:800}}>{formatTWD(dp+mortgagePaid)}</span>
+                            <div style={{background:C.danger+"12",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                              <div style={{fontSize:10,color:C.danger,fontWeight:700,marginBottom:2}}>⛔ 未繳房貸</div>
+                              <div style={{fontSize:12,fontWeight:800,color:C.danger}}>{unpaid?formatTWD(unpaid):"—"}</div>
+                              {rem>0&&<div style={{fontSize:9,color:C.textMuted,marginTop:1}}>{fmtPeriod(rem)}</div>}
                             </div>
-                          )}
+                          </div>
+                          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginTop:6,gap:6}}>
+                            <span style={{fontSize:11,color:C.textMuted}}>已付小計</span>
+                            <span style={{fontSize:14,fontWeight:900,color:C.success}}>{formatTWD(sub)}</span>
+                          </div>
                         </div>
                       );
                     })}
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-                      <div>
-                        <div style={{fontSize:12,color:C.success,fontWeight:700}}>總計已付出</div>
-                        {totalDownPayment>0&&<div style={{fontSize:11,color:C.textMuted}}>含自備款 {formatTWD(totalDownPayment)}</div>}
+                    {/* Grand totals row */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4,marginBottom:8}}>
+                      <div style={{background:C.success+"22",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:10,color:C.success,fontWeight:700,marginBottom:2}}>頭期款合計</div>
+                        <div style={{fontSize:13,fontWeight:900,color:C.success}}>{formatTWD(totalDownPayment)}</div>
                       </div>
-                      <span style={{fontSize:18,fontWeight:900,color:C.success}}>{formatTWD(grandTotalPaid)}</span>
+                      <div style={{background:C.success+"22",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:10,color:C.success,fontWeight:700,marginBottom:2}}>已繳房貸合計</div>
+                        <div style={{fontSize:13,fontWeight:900,color:C.success}}>{formatTWD(totalPaidAmount)}</div>
+                      </div>
+                      <div style={{background:C.danger+"15",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:10,color:C.danger,fontWeight:700,marginBottom:2}}>未繳合計</div>
+                        <div style={{fontSize:13,fontWeight:900,color:C.danger}}>{formatTWD(totalUnpaid)}</div>
+                      </div>
+                    </div>
+                    <div style={{background:`linear-gradient(90deg,${C.success}22,${C.success}10)`,border:`1px solid ${C.success}44`,borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:13,color:C.success,fontWeight:800}}>💰 總計已付出（頭期 ＋ 已繳房貸）</span>
+                      <span style={{fontSize:20,fontWeight:900,color:C.success}}>{formatTWD(grandTotalPaid)}</span>
                     </div>
                   </div>
                 )}
+
+                {/* Progress bar */}
                 {filteredMortgages.length>0&&(<>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <span style={{fontSize:12,color:C.textLight,fontWeight:600}}>整體還款進度</span>
@@ -1525,34 +1565,68 @@ function App(){
         {/* ── INSURANCE ── */}
         {tab==="insurance"&&(<SectionHeader ownerFilter={ownerFilter} title="🛡️ 保單" onAdd={()=>{setEditItem(null);setModal("insurance")}}>
           {(()=>{
-            const savingsArr=filterArr(data.insurance).filter(r=>r.type==="儲蓄險");
-            const lifeArr=filterArr(data.insurance).filter(r=>r.type==="壽險");
-            const otherArr=filterArr(data.insurance).filter(r=>r.type!=="儲蓄險"&&r.type!=="壽險");
-            const savingsTWD=savingsInsuranceAsset(savingsArr);
-            const savingsUSD=savingsArr.filter(r=>r.currency==="USD").reduce((s,r)=>s+(Number(r.paidPeriods)||0)*(Number(r.periodAmount)||0),0);
-            const lifeUSD=lifeArr.filter(r=>r.currency==="USD").reduce((s,r)=>s+(Number(r.paidPeriods)||0)*(Number(r.periodAmount)||0),0);
-            const lifeTWD=savingsInsuranceAsset(lifeArr);
+            const allIns=filterArr(data.insurance);
+            const completedArr=allIns.filter(r=>r.status==="已繳完");
+            const lifeArr=allIns.filter(r=>r.type==="壽險"&&r.status!=="已繳完");
+            const lifeAllArr=allIns.filter(r=>r.type==="壽險"); // 含已繳清，用於資產計算
+            const otherArr=allIns.filter(r=>r.type!=="壽險"&&r.status!=="已繳完");
+            const lifeUSD=lifeAllArr.filter(r=>r.currency==="USD").reduce((s,r)=>s+(Number(r.paidPeriods)||0)*(Number(r.periodAmount)||0),0);
+            const lifeTWD=savingsInsuranceAsset(lifeAllArr);
             return(<>
-              {/* 儲蓄險 section */}
+              {/* 已繳清保單 section */}
               <div style={{background:C.success+"10",border:`1px solid ${C.success}33`,borderRadius:14,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontWeight:800,fontSize:14,color:C.success,marginBottom:10}}>💰 儲蓄險（計入資產）</div>
+                <div style={{fontWeight:800,fontSize:14,color:C.success,marginBottom:10}}>✅ 已繳清保單</div>
                 <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                  <StatPill label="已繳資產 TWD" value={savingsTWD} color={C.success}/>
-                  {savingsUSD>0&&<StatPill label={`已繳 USD`} value={savingsUSD} color={C.KK}/>}
                   <div style={{background:C.card,borderRadius:14,padding:"13px 16px",border:`1px solid ${C.border}`}}>
                     <div style={{color:C.textMuted,fontSize:11,fontWeight:600,marginBottom:3}}>張數</div>
-                    <div style={{color:C.success,fontSize:15,fontWeight:800}}>{savingsArr.length} 張</div>
+                    <div style={{color:C.success,fontSize:15,fontWeight:800}}>{completedArr.length} 張</div>
                   </div>
+                  {completedArr.length>0&&<StatPill label="已繳資產 TWD" value={savingsInsuranceAsset(completedArr)} color={C.success}/>}
                 </div>
-                {!savingsArr.length?<div style={{textAlign:"center",color:C.textMuted,padding:"20px 0",fontSize:14}}>尚無儲蓄險</div>:savingsArr.map(r=><InsRowCard key={r.id} row={r} fields={insFields} onEdit={r=>{setEditItem(r);setModal("insurance")}} onDelete={id=>deleteItem("insurance",id)}/>)}
+                {!completedArr.length?<div style={{textAlign:"center",color:C.textMuted,padding:"20px 0",fontSize:14}}>尚無已繳清保單</div>:completedArr.map(r=><InsRowCard key={r.id} row={r} fields={insFields} onEdit={r=>{setEditItem(r);setModal("insurance")}} onDelete={id=>deleteItem("insurance",id)}/>)}
               </div>
 
               {/* 壽險 section */}
               <div style={{background:C.KK+"10",border:`1px solid ${C.KK}33`,borderRadius:14,padding:"14px 16px",marginBottom:14}}>
                 <div style={{fontWeight:800,fontSize:14,color:C.KK,marginBottom:10}}>🛡️ 壽險（計入資產）</div>
-                <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                  <StatPill label="已繳資產 TWD" value={lifeTWD} color={C.KK}/>
-                  {lifeUSD>0&&<StatPill label={`已繳 USD`} value={lifeUSD} color={C.KK}/>}
+                {(()=>{
+                  const lifeTWDonly=lifeAllArr.filter(r=>!r.currency||r.currency==="TWD").reduce((s,r)=>{
+                    const ep=r.status==="已繳完"?(Number(r.totalPeriods)||Number(r.paidPeriods)||0):(Number(r.paidPeriods)||0);
+                    return s+(Number(r.periodAmount)||0)*ep;
+                  },0);
+                  const lifeUSDpaid=lifeAllArr.filter(r=>r.currency==="USD").reduce((s,r)=>{
+                    const ep=r.status==="已繳完"?(Number(r.totalPeriods)||Number(r.paidPeriods)||0):(Number(r.paidPeriods)||0);
+                    return s+(Number(r.periodAmount)||0)*ep;
+                  },0);
+                  const lifeUSDasTWD=lifeAllArr.filter(r=>r.currency==="USD").reduce((s,r)=>{
+                    const ep=r.status==="已繳完"?(Number(r.totalPeriods)||Number(r.paidPeriods)||0):(Number(r.paidPeriods)||0);
+                    return s+toTWD((Number(r.periodAmount)||0)*ep,"USD",r.exchangeRateIns||30);
+                  },0);
+                  return(
+                    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+                      {lifeTWDonly>0&&(
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,paddingBottom:8,borderBottom:`1px dashed ${C.border}`}}>
+                          <span style={{fontSize:12,color:C.textMuted}}>TWD 保單已繳</span>
+                          <span style={{fontSize:13,fontWeight:700,color:C.KK}}>{formatTWD(lifeTWDonly)}</span>
+                        </div>
+                      )}
+                      {lifeUSDpaid>0&&(
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,paddingBottom:8,borderBottom:`1px dashed ${C.border}`}}>
+                          <div>
+                            <div style={{fontSize:12,color:C.textMuted}}>USD 保單已繳（換算台幣）</div>
+                            <div style={{fontSize:11,color:C.textMuted,marginTop:1}}>原幣 $ {lifeUSDpaid.toLocaleString()} USD</div>
+                          </div>
+                          <span style={{fontSize:13,fontWeight:700,color:C.KK}}>{formatTWD(lifeUSDasTWD)}</span>
+                        </div>
+                      )}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span style={{fontSize:13,fontWeight:800,color:C.KK}}>合計已繳資產 TWD</span>
+                        <span style={{fontSize:16,fontWeight:900,color:C.KK}}>{formatTWD(lifeTWDonly+lifeUSDasTWD)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div style={{display:"flex",gap:8,marginBottom:10}}>
                   <div style={{background:C.card,borderRadius:14,padding:"13px 16px",border:`1px solid ${C.border}`}}>
                     <div style={{color:C.textMuted,fontSize:11,fontWeight:600,marginBottom:3}}>張數</div>
                     <div style={{color:C.KK,fontSize:15,fontWeight:800}}>{lifeArr.length} 張</div>
@@ -1563,7 +1637,7 @@ function App(){
 
               {/* 其他保單 section */}
               <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
-                <div style={{fontWeight:800,fontSize:14,color:C.brownDark,marginBottom:10}}>🔐 保障型保單（不計資產）</div>
+                <div style={{fontWeight:800,fontSize:14,color:C.brownDark,marginBottom:10}}>🔐 保障型保單（繳費中）</div>
                 <div style={{display:"flex",gap:8,marginBottom:10}}>
                   <Tag color={C.accent}>{otherArr.filter(r=>r.status==="未繳完").length} 張未繳完</Tag>
                   <Tag color={C.success}>{otherArr.filter(r=>r.status==="已繳完").length} 張已繳完</Tag>
