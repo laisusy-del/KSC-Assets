@@ -110,7 +110,7 @@ function dataToCSV(data) {
   data.stocks.forEach(r=>rows.push(["股票",r.owner,`${r.name||""}(${r.ticker||""})`,r.amount||0,`類型:${r.type||"股票"}`,`成本:${r.cost||""}`,``,r.note||"",r.id].join(",")));
   data.bank.forEach(r=>rows.push(["銀行存款",r.owner,r.bank||"",r.amount||0,`末五碼:${r.account||""}|分行:${r.branch||""}`,`幣別:${r.currency||"TWD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id].join(",")));
   data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%|分行:${r.branch||""}`,`幣別:${r.currency||"TWD"}`,`匯率:${r.exchangeRate||""}|起始日:${r.startDate||""}|到期日:${r.endDate||""}`,r.note||"",r.id].join(",")));
-  (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id].join(",")));
+  (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}|房價:${r.housePrice||""}|自備款:${r.downPayment||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id].join(",")));
   data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"TWD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymeTWDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id].join(",")));
   (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,``,r.note||"",r.id].join(",")));
   (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,``,r.note||"",r.id].join(",")));
@@ -126,7 +126,7 @@ async function syncToGoogleDrive(data) {
     data.stocks.forEach(r=>rows.push(["股票",r.owner,r.name||"",r.amount||0,`類型:${r.type||"股票"}`,`成本:${r.cost||""}`,``,r.note||"",r.id]));
     data.bank.forEach(r=>rows.push(["銀行存款",r.owner,r.bank||"",r.amount||0,`末五碼:${r.account||""}|分行:${r.branch||""}`,`幣別:${r.currency||"TWD"}`,`匯率:${r.exchangeRate||""}`,r.note||"",r.id]));
     data.fixed.forEach(r=>rows.push(["定存",r.owner,r.bank||"",r.amount||0,`利率:${r.rate||""}%|分行:${r.branch||""}`,`幣別:${r.currency||"TWD"}`,`匯率:${r.exchangeRate||""}|起始日:${r.startDate||""}|到期日:${r.endDate||""}`,r.note||"",r.id]));
-    (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id]));
+    (data.mortgage||[]).forEach(r=>rows.push(["房貸",r.owner,r.houseName||r.bank||"",r.totalAmount||0,`每月:${r.monthlyPayment||""}|總期:${r.totalMonths||""}|已繳:${r.paidMonths||""}|銀行:${r.bank||""}`,`利率:${r.rate||""}|起貸:${r.startDate||""}|房價:${r.housePrice||""}|自備款:${r.downPayment||""}`,`剩餘本金:${r.remainingPrincipal||""}|預估利息:${r.estimatedInterest||""}|已繳更新:${r.paidMonthsUpdatedAt||""}`,r.note||"",r.id]));
     data.insurance.forEach(r=>rows.push(["保單",r.owner,r.product||"",r.periodAmount||r.premium||0,`保額:${r.amount||""}|公司:${r.company||""}|被保人:${r.insured||""}`,`類型:${r.type||"壽險"}|幣別:${r.currency||"TWD"}|匯率:${r.exchangeRateIns||""}`,`總期:${r.totalPeriods||""}|已繳:${r.paidPeriods||""}|扣款月:${r.paymentMonths||""}|最後繳:${r.lastPaymeTWDate||""}|狀態:${r.status||"未繳完"}`,r.note||"",r.id]));
     (data.expense||[]).forEach(r=>rows.push(["固定開銷",r.payer||"共同",r.name||"",r.amount||0,`類別:${r.category||""}`,`頻率:${r.freq||"每月"}`,"",r.note||"",r.id]));
     (data.travel||[]).forEach(r=>rows.push(["出國紀錄","",r.destination||"",r.totalAmount||0,`日期:${r.dateRange||""}`,`人數:${r.travelers||""}`,"",r.note||"",r.id]));
@@ -197,6 +197,7 @@ function parseRowsToData(rows) {
         monthlyPayment: val(sup1,"每月"), totalMonths: val(sup1,"總期"),
         paidMonths: val(sup1,"已繳"), bank: val(sup1,"銀行"),
         rate: val(sup2,"利率"), startDate: val(sup2,"起貸"),
+        housePrice: val(sup2,"房價"), downPayment: val(sup2,"自備款"),
         remainingPrincipal: val(sup3,"剩餘本金"),
         estimatedInterest: val(sup3,"預估利息"),
         paidMonthsUpdatedAt: val(sup3,"已繳更新"), note });
@@ -392,7 +393,7 @@ function FixedModal({initial,defaultOwner,onSave,onClose}){
 }
 
 function MortgageModal({initial,defaultOwner,onSave,onClose}){
-  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",houseName:"",bank:"",totalAmount:"",totalMonths:"",paidMonths:"",paidMonthsUpdatedAt:"",monthlyPayment:"",rate:"",startDate:"",remainingPrincipal:"",remainingTotalPayment:"",estimatedInterest:"",note:""});
+  const [f,setF]=useState(initial||{owner:defaultOwner||"KK",houseName:"",bank:"",housePrice:"",downPayment:"",totalAmount:"",totalMonths:"",paidMonths:"",paidMonthsUpdatedAt:"",monthlyPayment:"",rate:"",startDate:"",remainingPrincipal:"",remainingTotalPayment:"",estimatedInterest:"",note:""});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const remaining=Math.max(0,(Number(f.totalMonths)||0)-(Number(f.paidMonths)||0));
   const remainingAmt=remaining*(Number(f.monthlyPayment)||0);
@@ -401,6 +402,16 @@ function MortgageModal({initial,defaultOwner,onSave,onClose}){
     <OwnerSelect value={f.owner} onChange={v=>s("owner",v)}/>
     <Field label="房屋名稱（自訂）" value={f.houseName} onChange={v=>s("houseName",v)} placeholder="例：台中透天、北屯新房"/>
     <Field label="貸款銀行" value={f.bank} onChange={v=>s("bank",v)} placeholder="台灣銀行"/>
+    <div style={{display:"flex",gap:12}}>
+      <Field label="🏷️ 房屋購買金額" value={f.housePrice} onChange={v=>s("housePrice",v)} type="number" placeholder="15000000"/>
+      <Field label="💵 自備款" value={f.downPayment} onChange={v=>s("downPayment",v)} type="number" placeholder="3000000"/>
+    </div>
+    {(f.housePrice&&f.downPayment)&&(
+      <div style={{background:C.success+"12",border:`1px solid ${C.success}33`,borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:12,color:C.textMuted}}>
+        貸款比例：<span style={{color:C.mortgage,fontWeight:700}}>{Math.round((1-(Number(f.downPayment)||0)/Number(f.housePrice))*100)}%</span>
+        　自備款比例：<span style={{color:C.success,fontWeight:700}}>{Math.round((Number(f.downPayment)||0)/Number(f.housePrice)*100)}%</span>
+      </div>
+    )}
     <Field label="貸款總金額" value={f.totalAmount} onChange={v=>s("totalAmount",v)} type="number" placeholder="10000000"/>
     <div style={{display:"flex",gap:12}}>
       <Field label="貸款總期數（月）" value={f.totalMonths} onChange={v=>s("totalMonths",v)} type="number" placeholder="360"/>
@@ -1435,6 +1446,9 @@ function App(){
             const overallPct=filteredMortgages.reduce((s,r)=>s+(Number(r.totalMonths)||0),0)>0?
               Math.round(filteredMortgages.reduce((s,r)=>s+(Number(r.paidMonths)||0),0)/filteredMortgages.reduce((s,r)=>s+(Number(r.totalMonths)||0),0)*100):0;
             const totalLoaned=filteredMortgages.reduce((s,r)=>s+(Number(r.totalAmount)||0),0);
+            const totalPaidAmount=filteredMortgages.reduce((s,r)=>s+(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0),0);
+            const totalDownPayment=filteredMortgages.reduce((s,r)=>s+(Number(r.downPayment)||0),0);
+            const grandTotalPaid=totalPaidAmount+totalDownPayment;
             return(<>
               {/* Overview */}
               <div style={{background:`linear-gradient(135deg,${C.mortgage}22,${C.mortgage}08)`,border:`1px solid ${C.mortgage}33`,borderRadius:14,padding:"16px",marginBottom:14}}>
@@ -1448,6 +1462,46 @@ function App(){
                   {totalRemPrincipal===0&&<StatPill label="⏳ 試算剩餘" value={mortgageRemaining} color={C.danger}/>}
                   {totalEstInterest>0&&<StatPill label="💸 預估剩餘利息" value={totalEstInterest} color={"#C47A5A"}/>}
                 </div>
+                {(totalPaidAmount>0||totalDownPayment>0)&&(
+                  <div style={{background:C.success+"18",border:`1px solid ${C.success}44`,borderRadius:12,padding:"12px 16px",marginBottom:4}}>
+                    <div style={{fontSize:12,color:C.success,fontWeight:700,marginBottom:8}}>💰 已繳總金額</div>
+                    {filteredMortgages.filter(r=>r.paidMonths&&r.monthlyPayment||r.downPayment||r.housePrice).map(r=>{
+                      const mortgagePaid=(Number(r.paidMonths)||0)*(Number(r.monthlyPayment)||0);
+                      const dp=Number(r.downPayment)||0;
+                      const hp=Number(r.housePrice)||0;
+                      return(
+                        <div key={r.id} style={{marginBottom:10,paddingBottom:10,borderBottom:`1px dashed ${C.success}33`}}>
+                          <div style={{fontSize:13,color:C.text,fontWeight:700,marginBottom:5}}>{r.houseName||r.bank||"房貸"}{hp>0&&<span style={{color:C.textMuted,fontSize:11,fontWeight:400,marginLeft:8}}>購買金額 {formatTWD(hp)}</span>}</div>
+                          {dp>0&&(
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                              <span style={{fontSize:12,color:C.textMuted}}>自備款</span>
+                              <span style={{fontSize:12,color:C.success,fontWeight:600}}>{formatTWD(dp)}</span>
+                            </div>
+                          )}
+                          {mortgagePaid>0&&(
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                              <span style={{fontSize:12,color:C.textMuted}}>房貸已繳 <span style={{fontSize:11}}>（{r.paidMonths} 期 × {Number(r.monthlyPayment).toLocaleString()}）</span></span>
+                              <span style={{fontSize:12,color:C.success,fontWeight:600}}>{formatTWD(mortgagePaid)}</span>
+                            </div>
+                          )}
+                          {(dp>0||mortgagePaid>0)&&(
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4,paddingTop:4,borderTop:`1px solid ${C.success}22`}}>
+                              <span style={{fontSize:12,color:C.success,fontWeight:700}}>小計</span>
+                              <span style={{fontSize:13,color:C.success,fontWeight:800}}>{formatTWD(dp+mortgagePaid)}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                      <div>
+                        <div style={{fontSize:12,color:C.success,fontWeight:700}}>總計已付出</div>
+                        {totalDownPayment>0&&<div style={{fontSize:11,color:C.textMuted}}>含自備款 {formatTWD(totalDownPayment)}</div>}
+                      </div>
+                      <span style={{fontSize:18,fontWeight:900,color:C.success}}>{formatTWD(grandTotalPaid)}</span>
+                    </div>
+                  </div>
+                )}
                 {filteredMortgages.length>0&&(<>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <span style={{fontSize:12,color:C.textLight,fontWeight:600}}>整體還款進度</span>
